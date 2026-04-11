@@ -69,7 +69,7 @@ ALTER TABLE Profesores ADD FechaContratacion DATE
 
 --Agregar variable descripción tabla departamentos
 ALTER TABLE EscolarDB.dbo.Departamentos
-ADD Descripcion NVARCHAR(10)
+ADD Descripcion NVARCHAR(50)
 
 --Agregar variable rol en tabla CursosProfesores
 ALTER TABLE EscolarDB.dbo.CursosProfesores
