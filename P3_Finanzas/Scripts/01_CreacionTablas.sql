@@ -3,7 +3,7 @@ CREATE TABLE dbo.Movimientos (
     Tipo NVARCHAR(20), -- Depósito, Retiro, Pago
     Monto DECIMAL(10,2),
     Fecha DATETIME,
-    Referencia NVARCHAR(15)
+    Referencia NVARCHAR(50)
 );
 
 ---DROP TABLE Movimientos;
