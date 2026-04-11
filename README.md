@@ -24,6 +24,8 @@ Cada proyecto simula escenarios de negocio con categorías jerárquicas, diversi
 ---
 
 ## 📂 Estructura del repositorio
+
+```text
 SQL_Portfolio/
 ├── P1_Inventario/
 │   ├── Scripts/
@@ -66,19 +68,20 @@ SQL_Portfolio/
 │   └── Documentacion.md
 │
 └── P3_Finanzas/
-├── Scripts/
-│   ├── 01_CreacionTablas.sql
-│   │   ├── Movimientos (IdMovimientos PK, Tipo, Monto, Fecha)
-│   │   ├── Usuarios (IdUsuario PK, Nombre, Email)
-│   │   ├── Cuentas (IdCuenta PK, IdUsuario FK, TipoCuenta, Saldo)
-│   │   ├── Transacciones (IdTransaccion PK, IdCuenta FK, Monto, Fecha, Tipo)
-│   │   ├── Categorías (IdCategoria PK, Nombre)
-│   │   └── Presupuestos (IdPresupuesto PK, IdUsuario FK, IdCategoria FK, MontoAsignado, Periodo)
-│   ├── 02_DatosIniciales.sql
-│   ├── 03_Reportes.sql
-│   └── 04_InsertMasivo.sql   <-- Genera 500 registros aleatorios
-├── Diagramas/
-│   └── Finanzas_ERD.png
-├── AppDemo/
-│   └── Program.cs
-└── Documentacion.md
+    ├── Scripts/
+    │   ├── 01_CreacionTablas.sql
+    │   │   ├── Movimientos (IdMovimientos PK, Tipo, Monto, Fecha)
+    │   │   ├── Usuarios (IdUsuario PK, Nombre, Email)
+    │   │   ├── Cuentas (IdCuenta PK, IdUsuario FK, TipoCuenta, Saldo)
+    │   │   ├── Transacciones (IdTransaccion PK, IdCuenta FK, Monto, Fecha, Tipo)
+    │   │   ├── Categorías (IdCategoria PK, Nombre)
+    │   │   └── Presupuestos (IdPresupuesto PK, IdUsuario FK, IdCategoria FK, MontoAsignado, Periodo)
+    │   ├── 02_DatosIniciales.sql
+    │   ├── 03_Reportes.sql
+    │   └── 04_InsertMasivo.sql   <-- Genera 500 registros aleatorios
+    ├── Diagramas/
+    │   └── Finanzas_ERD.png
+    ├── AppDemo/
+    │   └── Program.cs
+    └── Documentacion.md
+```
