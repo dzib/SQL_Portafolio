@@ -50,3 +50,39 @@ CREATE TABLE InventarioDB.dbo.Pagos (
     FechaPago DATETIME DEFAULT GETDATE(),
     Metodo NVARCHAR(50)
 );
+
+-- Productos ( nombre, precio, stock, categoría, fecha creación)
+-- Agregar columnas de categoría y fecha creación a la tabla Productos
+ALTER TABLE InventarioDB.dbo.Productos
+ADD Categoria NVARCHAR(100),
+    FechaCreacion DATETIME;
+
+-- Proveedores (nombre, teléfono, ciudad)
+-- Agregar columna de ciudad a la tabla Proveedores
+ALTER TABLE InventarioDB.dbo.Proveedores
+ADD Ciudad NVARCHAR(100);
+
+-- Categorías (nombre, descripción)
+-- Agregar columna de descripción a la tabla Categorias
+ALTER TABLE InventarioDB.dbo.Categorias
+ADD Descripcion NVARCHAR(255);
+
+-- Clientes (nombre, email, teléfono, ciudad)
+-- Agregar columna de ciudad a la tabla Clientes
+ALTER TABLE InventarioDB.dbo.Clientes
+ADD Ciudad NVARCHAR(100);
+
+-- Pedidos (cliente, fecha, estado)
+-- Agregar columna de estado a la tabla Pedidos
+ALTER TABLE InventarioDB.dbo.Pedidos
+ADD Estado NVARCHAR(50);
+
+-- DetallePedido (pedido, producto, cantidad, precio unitario)
+-- Agregar columna de precio unitario a la tabla DetallePedido
+ALTER TABLE InventarioDB.dbo.DetallePedido
+ADD PrecioUnitario DECIMAL(10,2);
+
+-- Ventas (producto, cantidad, fecha, sucursal)
+-- Agregar columna de sucursal a la tabla Ventas
+ALTER TABLE InventarioDB.dbo.Ventas
+ADD Sucursal NVARCHAR(100);
