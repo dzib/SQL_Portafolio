@@ -1,4 +1,4 @@
-CREATE TABLE FinanzasDB.dbo.Movimientos (
+CREATE TABLE dbo.Movimientos (
     IdMovimiento INT PRIMARY KEY IDENTITY,
     Tipo NVARCHAR(20), -- Depósito, Retiro, Pago
     Monto DECIMAL(10,2),
@@ -35,7 +35,7 @@ CREATE TABLE FinanzasDB.dbo.Transacciones (
     Fecha DATETIME
 );
 
-CREATE TABLE FinanzasDB.dbo.Categorias (
+CREATE TABLE dbo.Categorias (
     IdCategoria INT PRIMARY KEY IDENTITY,
     Nombre NVARCHAR(100),
     Tipo NVARCHAR(20),
@@ -46,7 +46,7 @@ CREATE TABLE FinanzasDB.dbo.Categorias (
 
 CREATE TABLE FinanzasDB.dbo.Presupuestos (
     IdPresupuesto INT PRIMARY KEY IDENTITY,
-    IdUsuario INT FOREIGN KEY REFERENCES Usuarios(IdUsuario),
+    IdUsuario INT FOREIGN KEY REFERENCES FinanzasDB.dbo.Usuarios(IdUsuario),
     IdCategoria INT FOREIGN KEY REFERENCES FinanzasDB.dbo.Categorias(IdCategoria),
     MontoAsignado DECIMAL(10,2),
     Periodo NVARCHAR(20),
