@@ -1,0 +1,52 @@
+CREATE TABLE Productos (
+	IdProducto INT PRIMARY KEY IDENTITY,
+	Nombre NVARCHAR(100) NOT NULL,
+	Precio DECIMAL(10,2) NOT NULL,
+	Stock INT NOT NULL
+);
+
+CREATE TABLE Proveedores (
+	IdProveedor INT PRIMARY KEY IDENTITY,
+	Nombre NVARCHAR(100) NOT NULL,
+	Telefono NVARCHAR(20)
+);
+
+CREATE TABLE Ventas (
+	IdVenta INT PRIMARY KEY IDENTITY,
+	IdProducto INT FOREIGN KEY REFERENCES Productos(IdProducto),
+	Cantidad INT NOT NULL,
+	Fecha DATETIME DEFAULT GETDATE()
+);
+
+CREATE TABLE Categorias (
+    IdCategoria INT PRIMARY KEY IDENTITY,
+    Nombre NVARCHAR(100) NOT NULL
+);
+
+CREATE TABLE Clientes (
+    IdCliente INT PRIMARY KEY IDENTITY,
+    Nombre NVARCHAR(100),
+    Email NVARCHAR(100),
+    Telefono NVARCHAR(20)
+);
+
+CREATE TABLE Pedidos (
+    IdPedido INT PRIMARY KEY IDENTITY,
+    IdCliente INT FOREIGN KEY REFERENCES Clientes(IdCliente),
+    FechaPedido DATETIME DEFAULT GETDATE()
+);
+
+CREATE TABLE DetallePedido (
+    IdDetalle INT PRIMARY KEY IDENTITY,
+    IdPedido INT FOREIGN KEY REFERENCES Pedidos(IdPedido),
+    IdProducto INT FOREIGN KEY REFERENCES Productos(IdProducto),
+    Cantidad INT NOT NULL
+);
+
+CREATE TABLE Pagos (
+    IdPago INT PRIMARY KEY IDENTITY,
+    IdPedido INT FOREIGN KEY REFERENCES Pedidos(IdPedido),
+    Monto DECIMAL(10,2),
+    FechaPago DATETIME DEFAULT GETDATE(),
+    Metodo NVARCHAR(50)
+);
