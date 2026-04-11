@@ -81,3 +81,7 @@ ADD Rol NVARCHAR(10)
 --Agregar variable Aula en tabla Horarios
 ALTER TABLE EscolarDB.dbo.Horarios
 ADD Aula NVARCHAR(50)
+
+----Correcion en la tabla CursosProfesores, tamaño de la variable rol
+ALTER TABLE EscolarDB.dbo.CursosProfesores
+ALTER COLUMN Rol NVARCHAR(50)
