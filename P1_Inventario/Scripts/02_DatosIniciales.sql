@@ -1,5 +1,5 @@
 ---Insertar 15 productos
-INSERT INTO FinanzasDB.dbo.Productos (Nombre, Precio, Stock)
+INSERT INTO InventarioDB.dbo.Productos (Nombre, Precio, Stock)
 VALUES 
 ('Laptop Dell Inspiron', 14500, 18),
 ('Laptop HP Pavilion', 15200, 22),
@@ -18,7 +18,7 @@ VALUES
 ('Silla Ergonómica OfficePro', 4800, 10);
 
 -- Insertar 8 proveedores
-INSERT INTO FinanzasDB.dbo.Proveedores (Nombre, Telefono)
+INSERT INTO InventarioDB.dbo.Proveedores (Nombre, Telefono)
 VALUES 
 ('Proveedor A - Computo', '9991234567'),
 ('Proveedor B - Accesorios', '9997654321'),
