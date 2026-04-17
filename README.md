@@ -1,26 +1,40 @@
 # 📊 SQL Portafolio – SSMS 22
-Repositorio con tres proyectos en SSMS 22 que muestran el modelado de datos, la generación masiva de datasets realistas y las consultas analíticas. Incluye tablas jerárquicas, diversidad temporal y ejemplos prácticos para dashboards y BI, aportando valor como portafolio técnico y base para transformación digital
----
-El presente repositorio consta de  tres proyectos en **SQL Server Management Studio 22 (SSMS)** , con el objetivo de demostrar mis habilidades en:
+Repositorio con tres proyectos en SQL Server Management Studio 22 (SSMS) que muestran mis habilidades en modelado de datos, generación masiva de datasets realistas y consultas analíticas.
+--
 
-- 🗂️ **Modelado de datos**
+Incluye:
+
+-Tablas jerárquicas y normalizadas
+-Diversidad temporal en registros
+-Ejemplos prácticos para dashboards y BI
+-Este portafolio aporta valor como base técnica para proyectos de transformación digital y ciencia de datos.
+
+---
+## 🎯 Objetivos del portafolio
+
+- 🗂️ **Modelado de datos* y Tablas jerárquicas normalizadas*: diseño de esquemas relacionales con integridad referencial y reglas de negocio.
 - 📈 **Generación masiva de datasets realistas**
+-    **Diversidad temporal en registos, fechas variadas para análisis de tendencias**
 - 🔍 **Consultas analíticas para BI y dashboards**
 
-Cada proyecto simula escenarios de negocio con categorías jerárquicas, diversidad temporal y referencias ejecutivas, aportando valor como portafolio técnico y como base para proyectos de transformación digital y de ciencia de datos.
+Cada proyecto simula un entorno de negocio distinto (Inventario, Escolar, Finanzas), demostrando versatilidad en el uso de SQL para distintos dominios.
 
 ---
 
 ## 🚀 Proyectos incluidos
-1. **Generación de datos masivos**  
-   Scripts SQL optimizados para crear datasets realistas con nombres, ciudades y periodos variados.
-
-2. **Modelado jerárquico de tablas**  
-   Diseño de estructuras con categorías y subcategorías para análisis multinivel.
-
-3. **Consultas analíticas avanzadas**  
-   Ejemplos prácticos de reportes ejecutivos y métricas clave para dashboards.
-
+1. **P1_Inventario**
+   -Arquitectura de tablas para gestión de inventario.
+   -Scripts de carga masiva con 500 registros aleatorios.
+   -Ejemplos de limpieza de datos (ETL) y reportes ejecutivos.
+   -Incluye diagrama ERD y demo de aplicación en C#.
+2. **P2_Escolar (en proceso de mejora)**
+   -Modelado de alumnos, cursos, profesores y calificaciones.
+   -Inserción masiva de datos simulados.
+   -Consultas analíticas para métricas académicas.
+3. **P3_Finanzas** (en proceso de mejora)
+    -Modelado de usuarios, cuentas, transacciones y presupuestos.
+    -Scripts de inserción masiva para simular movimientos financieros.
+    -Reportes de métricas clave para control presupuestal.
 ---
 
 ## 📂 Estructura del repositorio
@@ -29,18 +43,11 @@ Cada proyecto simula escenarios de negocio con categorías jerárquicas, diversi
 SQL_Portfolio/
 ├── P1_Inventario/
 │   ├── Scripts/
-│   │   ├── 01_CreacionTablas.sql
-│   │   │   ├── Productos (IdProducto PK, Nombre, Precio, Stock, Categoría, FechaCreación)
-│   │   │   ├── Proveedores (IdProveedor PK, Nombre, Teléfono)
-│   │   │   ├── Ventas (IdVenta PK, IdProducto FK, Cantidad, Fecha)
-│   │   │   ├── Categorías (IdCategoria PK, Nombre)
-│   │   │   ├── Clientes (IdCliente PK, Nombre, Email, Teléfono)
-│   │   │   ├── Pedidos (IdPedido PK, IdCliente FK, FechaPedido)
-│   │   │   ├── DetallePedido (IdDetalle PK, IdPedido FK, IdProducto FK, Cantidad)
-│   │   │   └── Pagos (IdPago PK, IdPedido FK, Monto, FechaPago, Metodo)
-│   │   ├── 02_DatosIniciales.sql
-│   │   ├── 03_ConsultasEjemplo.sql
-│   │   └── 04_InsertMasivo.sql   <-- Genera 500 registros aleatorios
+│   │   ├── 01_CreacionTablas.sql        # Arquitectura y reglas de negocio
+│   │   ├── 02_DatosIniciales.sql        # Inserción de datos base
+│   │   ├── 03_InsertMasivoDatos.sql     # Generación masiva de 500 registros
+│   │   ├── 04_LimpiezaDatos_ETL.sql     # Normalización y limpieza de datos
+│   │   └── 05_Reportes_BI.sql           # Consultas analíticas y métricas
 │   ├── Diagramas/
 │   │   └── Inventario_ERD.png
 │   ├── AppDemo/
@@ -48,40 +55,23 @@ SQL_Portfolio/
 │   └── Documentacion.md
 │
 ├── P2_Escolar/
-│   ├── Scripts/
-│   │   ├── 01_CreacionTablas.sql
-│   │   │   ├── Alumnos (IdAlumno PK, Nombre, Carrera)
-│   │   │   ├── Cursos (IdCurso PK, Nombre, Créditos)
-│   │   │   ├── Calificaciones (IdCalificacion PK, IdAlumno FK, IdCurso FK, Nota)
-│   │   │   ├── Profesores (IdProfesor PK, Nombre, Especialidad)
-│   │   │   ├── Departamentos (IdDepartamento PK, Nombre)
-│   │   │   ├── CursosProfesores (IdCurso FK, IdProfesor FK)
-│   │   │   ├── Horarios (IdHorario PK, IdCurso FK, DiaSemana, HoraInicio, HoraFin)
-│   │   │   └── Asistencias (IdAsistencia PK, IdAlumno FK, IdCurso FK, Fecha, Presente BIT)
-│   │   ├── 02_DatosIniciales.sql
-│   │   ├── 03_ConsultasEjemplo.sql
-│   │   └── 04_InsertMasivo.sql   <-- Genera 500 registros aleatorios
-│   ├── Diagramas/
-│   │   └── Escolar_ERD.png
-│   ├── AppDemo/
-│   │   └── Program.cs
+│   ├── Scripts/...
+│   ├── Diagramas/...
+│   ├── AppDemo/...
 │   └── Documentacion.md
 │
 └── P3_Finanzas/
-    ├── Scripts/
-    │   ├── 01_CreacionTablas.sql
-    │   │   ├── Movimientos (IdMovimientos PK, Tipo, Monto, Fecha)
-    │   │   ├── Usuarios (IdUsuario PK, Nombre, Email)
-    │   │   ├── Cuentas (IdCuenta PK, IdUsuario FK, TipoCuenta, Saldo)
-    │   │   ├── Transacciones (IdTransaccion PK, IdCuenta FK, Monto, Fecha, Tipo)
-    │   │   ├── Categorías (IdCategoria PK, Nombre)
-    │   │   └── Presupuestos (IdPresupuesto PK, IdUsuario FK, IdCategoria FK, MontoAsignado, Periodo)
-    │   ├── 02_DatosIniciales.sql
-    │   ├── 03_Reportes.sql
-    │   └── 04_InsertMasivo.sql   <-- Genera 500 registros aleatorios
-    ├── Diagramas/
-    │   └── Finanzas_ERD.png
-    ├── AppDemo/
-    │   └── Program.cs
+    ├── Scripts/...
+    ├── Diagramas/...
+    ├── AppDemo/...
     └── Documentacion.md
 ```
+---
+
+## 📌 Próximos pasos
+
+Mejorar los proyectos Escolar y Finanzas con el mismo nivel de detalle que Inventario.
+
+Añadir ejemplos de integración con Power BI y Tableau para visualización.
+
+Documentar casos de uso de ETL y normalización para mostrar procesos de limpieza de datos.
