@@ -1,7 +1,7 @@
 /* 
 ==================================================================================================
 PROYECTO: P1_Inventario -Sistema de Gestión de Inventario- | Fase 2: Datos de Control | Seed Data
-                                                                     Validación de Integridad
+                                                             Validación de Integridad (Semilla)
 AUTOR: Alberto Dzib
 VERSIÓN: 1.0
 DESCRIPCIÓN: Inserción de registros iniciales de prueba para validación de integridad de procesos.

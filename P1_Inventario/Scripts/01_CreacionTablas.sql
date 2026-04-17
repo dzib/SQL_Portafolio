@@ -14,8 +14,12 @@ USE master;
 GO
 
 -- Se asegura que la base de datos sea creada desde cero
+-- Forzar el cierre de todas las conexiones activas a la base de datos
 IF EXISTS (SELECT * FROM sys.databases WHERE name = 'P1_Inventario')
+BEGIN
+    ALTER DATABASE P1_Inventario SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
     DROP DATABASE P1_Inventario;
+END
 GO
 
 CREATE DATABASE P1_Inventario;
