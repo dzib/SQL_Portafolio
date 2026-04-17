@@ -1,88 +1,116 @@
-CREATE TABLE InventarioDB.dbo.Productos (
-	IdProducto INT PRIMARY KEY IDENTITY,
-	Nombre NVARCHAR(100) NOT NULL,
-	Precio DECIMAL(10,2) NOT NULL,
-	Stock INT NOT NULL
+/* 
+================================================================================
+PROYECTO: P1_Inventario -Sistema de Gestión de Inventario- | Fase 1: Arquitectura y Reglas de Negocio
+AUTOR: Alberto Dzib
+VERSIÓN: 1.0
+DESCRIPCIÓN: Implementación del esquema relacional bajo estándares SQL 2025.
+             Definición de la estructura de tablas e integridad referencial.
+             Se diseñó con datos 'No Atómicos' (separados por '|') intencionales para demostrar 
+             capacidades de normalización y limpieza (Data Cleansing).
+================================================================================
+*/
+
+USE master;
+GO
+
+-- Se asegura que la base de datos sea creada desde cero
+IF EXISTS (SELECT * FROM sys.databases WHERE name = 'P1_Inventario')
+    DROP DATABASE P1_Inventario;
+GO
+
+CREATE DATABASE P1_Inventario;
+GO
+
+USE P1_Inventario;
+GO
+
+-- -----------------------------------------------------------------------------
+-- *Limpieza* (Idempotencia): Borrar tablas en orden inverso por las FK
+-- -----------------------------------------------------------------------------
+DROP TABLE IF EXISTS Pagos;
+DROP TABLE IF EXISTS DetallePedido;
+DROP TABLE IF EXISTS Pedidos;
+DROP TABLE IF EXISTS Ventas; 
+DROP TABLE IF EXISTS Productos;
+DROP TABLE IF EXISTS Categorias;
+DROP TABLE IF EXISTS Proveedores;
+DROP TABLE IF EXISTS Clientes;
+GO
+
+-- -----------------------------------------------------------------------------
+-- 1. TABLAS MAESTRAS
+--    CATÁLOGOS (Nivel de normalización 1), (Sin llaves foráneas externas).    
+-- -----------------------------------------------------------------------------
+CREATE TABLE Categorias (
+    IdCategoria INT PRIMARY KEY IDENTITY(1,1),
+    Nombre NVARCHAR(200) NOT NULL, -- Formato esperado: 'Nombre | Clasificación' (Evitar categorias duplicadas)
+    Descripcion NVARCHAR(500),
+    CreatedAt DATETIME2 DEFAULT SYSUTCDATETIME()
 );
 
-CREATE TABLE InventarioDB.dbo.Proveedores (
-	IdProveedor INT PRIMARY KEY IDENTITY,
-	Nombre NVARCHAR(100) NOT NULL,
-	Telefono NVARCHAR(20)
+CREATE TABLE Proveedores (
+    IdProveedor INT PRIMARY KEY IDENTITY(1,1),
+    Nombre NVARCHAR(200) NOT NULL, -- Formato esperado: 'Razón Social | Tipo'
+    Telefono NVARCHAR(50),
+    Ciudad NVARCHAR(200),          -- Formato esperado: 'Ciudad | Estado'
+    IsActive BIT DEFAULT 1         -- Soft delete: 1 = Activo, 0 = Inactivo (borrado lógico)
 );
 
-CREATE TABLE InventarioDB.dbo.Ventas (
-	IdVenta INT PRIMARY KEY IDENTITY,
-	IdProducto INT FOREIGN KEY REFERENCES InventarioDB.dbo.Productos(IdProducto),
-	Cantidad INT NOT NULL,
-	Fecha DATETIME DEFAULT GETDATE()
+-- -----------------------------------------------------------------------------
+-- 2. TABLAS OPERATIVAS
+--    (Nivel de normalización 2), (Dependencia de las maestras).
+-- -----------------------------------------------------------------------------
+CREATE TABLE Productos (
+    IdProducto INT PRIMARY KEY IDENTITY(1,1),
+    Nombre NVARCHAR(200) NOT NULL,
+    IdCategoria INT CONSTRAINT FK_Prod_Cat FOREIGN KEY REFERENCES Categorias(IdCategoria),   -- Relación con Categorías
+    IdProveedor INT CONSTRAINT FK_Prod_Prov FOREIGN KEY REFERENCES Proveedores(IdProveedor), -- Relación con Proveedores
+    Precio DECIMAL(12,2) NOT NULL CONSTRAINT CHK_PrecioPos CHECK (Precio >= 0),              -- Restricción de negocio evitar precios negativos
+    Stock INT NOT NULL CONSTRAINT CHK_StockPos CHECK (Stock >= 0)                            -- Restricción de negocio evitar stock negativo
 );
 
-CREATE TABLE InventarioDB.dbo.Categorias (
-    IdCategoria INT PRIMARY KEY IDENTITY,
-    Nombre NVARCHAR(100) NOT NULL
+CREATE TABLE Clientes (
+    IdCliente INT PRIMARY KEY IDENTITY(1,1),
+    Nombre NVARCHAR(200) NOT NULL,
+    Email NVARCHAR(200) CONSTRAINT UQ_Cli_Email UNIQUE,  -- El email debe ser único para evitar clientes duplicados
+    Telefono NVARCHAR(20),
+    Ciudad NVARCHAR(200),          -- Formato esperado: 'Ciudad | Estado'
+    FechaRegistro DATETIME2 DEFAULT SYSUTCDATETIME()
 );
 
-CREATE TABLE InventarioDB.dbo.Clientes (
-    IdCliente INT PRIMARY KEY IDENTITY,
-    Nombre NVARCHAR(100),
-    Email NVARCHAR(100),
-    Telefono NVARCHAR(20)
+-- -----------------------------------------------------------------------------
+-- 3. TABLAS TRANSACCIONALES 
+--    (Flujo operativos: ventas y pedidos)
+-- -----------------------------------------------------------------------------
+CREATE TABLE Pedidos (
+    IdPedido INT PRIMARY KEY IDENTITY(1,1),
+    IdCliente INT CONSTRAINT FK_Ped_Cli FOREIGN KEY REFERENCES Clientes(IdCliente),
+    FechaPedido DATETIME2 DEFAULT SYSUTCDATETIME(),
+    -- Ajustado para permitir el formato sucio 'Estado | Accion' que limpiaremos en el Script 04
+    Estado NVARCHAR(100) CONSTRAINT CHK_FmtEstado CHECK (Estado LIKE '%|%')
 );
 
-CREATE TABLE InventarioDB.dbo.Pedidos (
-    IdPedido INT PRIMARY KEY IDENTITY,
-    IdCliente INT FOREIGN KEY REFERENCES InventarioDB.dbo.Clientes(IdCliente),
-    FechaPedido DATETIME DEFAULT GETDATE()
+CREATE TABLE DetallePedido (
+    IdDetalle INT PRIMARY KEY IDENTITY(1,1),
+    IdPedido INT CONSTRAINT FK_Det_Ped FOREIGN KEY REFERENCES Pedidos(IdPedido) ON DELETE CASCADE,
+    IdProducto INT CONSTRAINT FK_Det_Prod FOREIGN KEY REFERENCES Productos(IdProducto),
+    Cantidad INT NOT NULL CHECK (Cantidad > 0),
+    PrecioUnitario DECIMAL(12,2) NOT NULL       -- Se guarda el precio al momento de la venta
+
 );
 
-CREATE TABLE InventarioDB.dbo.DetallePedido (
-    IdDetalle INT PRIMARY KEY IDENTITY,
-    IdPedido INT FOREIGN KEY REFERENCES InventarioDB.dbo.Pedidos(IdPedido),
-    IdProducto INT FOREIGN KEY REFERENCES InventarioDB.dbo.Productos(IdProducto),
-    Cantidad INT NOT NULL
+CREATE TABLE Pagos (
+    IdPago INT PRIMARY KEY IDENTITY(1,1),
+    IdPedido INT CONSTRAINT FK_Pag_Ped FOREIGN KEY REFERENCES Pedidos(IdPedido),
+    Monto DECIMAL(12,2) NOT NULL,
+    FechaPago DATETIME2 DEFAULT SYSUTCDATETIME(),
+    MetodoPago NVARCHAR(100)       -- Formato esperado: 'Método | Institución'
 );
 
-CREATE TABLE InventarioDB.dbo.Pagos (
-    IdPago INT PRIMARY KEY IDENTITY,
-    IdPedido INT FOREIGN KEY REFERENCES InventarioDB.dbo.Pedidos(IdPedido),
-    Monto DECIMAL(10,2),
-    FechaPago DATETIME DEFAULT GETDATE(),
-    Metodo NVARCHAR(50)
+CREATE TABLE Ventas (
+    IdVenta INT PRIMARY KEY IDENTITY(1,1),
+    IdProducto INT CONSTRAINT FK_Vent_Prod FOREIGN KEY REFERENCES Productos(IdProducto),
+    Cantidad INT NOT NULL,
+    Sucursal NVARCHAR(200)         -- Formato esperado: 'Nombre Sucursal | Ubicación'
 );
-
--- Productos ( nombre, precio, stock, categoría, fecha creación)
--- Agregar columnas de categoría y fecha creación a la tabla Productos
-ALTER TABLE InventarioDB.dbo.Productos
-ADD Categoria NVARCHAR(100),
-    FechaCreacion DATETIME;
-
--- Proveedores (nombre, teléfono, ciudad)
--- Agregar columna de ciudad a la tabla Proveedores
-ALTER TABLE InventarioDB.dbo.Proveedores
-ADD Ciudad NVARCHAR(100);
-
--- Categorías (nombre, descripción)
--- Agregar columna de descripción a la tabla Categorias
-ALTER TABLE InventarioDB.dbo.Categorias
-ADD Descripcion NVARCHAR(255);
-
--- Clientes (nombre, email, teléfono, ciudad)
--- Agregar columna de ciudad a la tabla Clientes
-ALTER TABLE InventarioDB.dbo.Clientes
-ADD Ciudad NVARCHAR(100);
-
--- Pedidos (cliente, fecha, estado)
--- Agregar columna de estado a la tabla Pedidos
-ALTER TABLE InventarioDB.dbo.Pedidos
-ADD Estado NVARCHAR(50);
-
--- DetallePedido (pedido, producto, cantidad, precio unitario)
--- Agregar columna de precio unitario a la tabla DetallePedido
-ALTER TABLE InventarioDB.dbo.DetallePedido
-ADD PrecioUnitario DECIMAL(10,2);
-
--- Ventas (producto, cantidad, fecha, sucursal)
--- Agregar columna de sucursal a la tabla Ventas
-ALTER TABLE InventarioDB.dbo.Ventas
-ADD Sucursal NVARCHAR(100);
+GO
