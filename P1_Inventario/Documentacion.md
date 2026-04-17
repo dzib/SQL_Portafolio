@@ -39,7 +39,7 @@ Se diseñó con datos no atómicos (separados por |) de forma intencional, con e
 	-Top 10 productos más vendidos.
 ---
 
-📊 Ejemplo de métricas de ejecución
+## 📊 Ejemplo de métricas de ejecución
 Tras la carga masiva de datos:
 
 | Categorías | Proveedores | Clientes | Productos | Pedidos | DetallePedido | Pagos | Ventas | TiempoTotal_ms |
@@ -47,8 +47,9 @@ Tras la carga masiva de datos:
 | 100 | 100 | 500 | 500 | 500 | 500 | 500 | 500 | 1776 |
 ---
 
-📂 Estructura del proyecto
-text
+## 📂 Estructura del proyecto
+
+```text
 P1_Inventario/
 ├── Scripts/
 │   ├── 01_CreacionTablas.sql
@@ -61,3 +62,4 @@ P1_Inventario/
 ├── AppDemo/
 │   └── Program.cs
 └── Documentacion.md
+```
