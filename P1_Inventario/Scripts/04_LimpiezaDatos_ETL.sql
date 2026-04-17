@@ -147,7 +147,7 @@ SELECT TOP 5 'Pagos' AS Tabla, IdPago, MetodoPago, InstitucionFinanciera
 FROM Pagos;
 
 -- Validació Ventas
-SELECT TOP 5 'Ventas' AS Tabla, Sucursal, UbicacionRegional
+SELECT TOP 5 'Ventas' AS Tabla, Sucursal, UbicacionRegional, Fecha
 FROM Ventas;
 
 PRINT 'Proceso de limpieza completado exitosamente.';

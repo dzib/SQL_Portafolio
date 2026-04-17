@@ -117,10 +117,15 @@ BEGIN TRY
 
         DECLARE @ProdVentaID INT = (SELECT TOP 1 IdProducto FROM Productos ORDER BY NEWID());
 
-        INSERT INTO Ventas (IdProducto, Cantidad, Sucursal)
-        VALUES (@ProdVentaID, FLOOR(RAND()*10)+1, @Sucursal);
+        INSERT INTO Ventas (IdProducto, Cantidad, Fecha, Sucursal)
+        VALUES (
+            @ProdVentaID, 
+            FLOOR(RAND()*10)+1, 
+            DATEADD(DAY, -(@i % 30), GETDATE()), -- Genera fechas de los últimos 30 días
+            @Sucursal
+        );
 
-        SET @i += 1;
+        SET @i += 1;;
     END
 
     COMMIT TRANSACTION;

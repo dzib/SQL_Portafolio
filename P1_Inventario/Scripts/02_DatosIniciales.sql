@@ -65,8 +65,8 @@ INSERT INTO Pagos (IdPedido, Monto, MetodoPago) VALUES
 (@IdPed1, 15800.00, 'Transferencia | BBVA');
 
 -- Venta Directa (Mostrador)
-INSERT INTO Ventas (IdProducto, Cantidad, Sucursal) VALUES 
-(3, 1, 'Sucursal Norte | Mérida');
+INSERT INTO Ventas (IdProducto, Cantidad, Fecha, Sucursal) VALUES 
+(3, 1, SYSUTCDATETIME(), 'Sucursal Norte | Mérida');
 
 GO
 PRINT 'Fase 2: Datos iniciales insertados con éxito.';

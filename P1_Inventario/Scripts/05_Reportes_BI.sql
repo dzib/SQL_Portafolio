@@ -13,22 +13,24 @@ GO
 
 ----------------------------------------------------------------------------------------------------------------
 PRINT '--- PASO 1: CREANDO VISTA CONSOLIDADA DE INGRESOS ---';
--- Esta vista une Pedidos Online y Ventas de Mostrador en un solo reporte lógico.
+-- Esta vista se une Pedidos Online y Ventas de Mostrador en un solo reporte lógico.
 ----------------------------------------------------------------------------------------------------------------
+-- Eliminamos la vista si existe para evitar conflictos de recreación
 IF OBJECT_ID('vw_ReporteGlobalVentas', 'V') IS NOT NULL DROP VIEW vw_ReporteGlobalVentas;
 GO
 
 CREATE VIEW vw_ReporteGlobalVentas AS
+-- Fuente 1: Pedidos realizados a través del sistema (E-Commerce)
 SELECT 
-    'E-Commerce' AS Canal,
-    p.FechaPedido AS Fecha,
-    c.Nombre AS Entidad,
-    cat.Nombre AS Categoria,
-    pr.Nombre AS Producto,
+    'Pedido Online' AS Canal,
+    p.FechaPedido AS Fecha_Transaccion,
+    c.Nombre AS Entidad_Destino,
+    cat.Nombre AS Categoria_Producto,
+    pr.Nombre AS Nombre_Producto,
     dp.Cantidad,
     dp.PrecioUnitario,
     (dp.Cantidad * dp.PrecioUnitario) AS Subtotal,
-    p.Estado AS Estatus_Venta --En este paso se usa el estado ya limpio por el Script 04
+    p.Estado AS Estatus_Actual --En este paso se usa el estado ya limpio por el Script 04
 FROM Pedidos p
 JOIN Clientes c ON p.IdCliente = c.IdCliente
 JOIN DetallePedido dp ON p.IdPedido = dp.IdPedido
@@ -37,16 +39,17 @@ JOIN Categorias cat ON pr.IdCategoria = cat.IdCategoria
 
 UNION ALL
 
+-- Fuente 2: Ventas directas registradas en sucursal (Punto de Venta)
 SELECT 
-    'Punto de Venta' AS Canal,
-    v.Fecha AS Fecha,
+    'Venta Mostrador' AS Canal,
+    v.Fecha AS Fecha_Transaccion,
     v.Sucursal AS Entidad,
     cat.Nombre AS Categoria,
     pr.Nombre AS Producto,
     v.Cantidad,
     pr.Precio AS PrecioUnitario,
     (v.Cantidad * pr.Precio) AS Subtotal,
-    'Completado' AS Estatus_Venta
+    'Completado' AS Estatus_Actual
 FROM Ventas v
 JOIN Productos pr ON v.IdProducto = pr.IdProducto
 JOIN Categorias cat ON pr.IdCategoria = cat.IdCategoria;
@@ -58,12 +61,12 @@ PRINT '--- PASO 2: GENERANDO KPIS EJECUTIVOS ---';
 ----------------------------------------------------------------------------------------------------------------
 
 SELECT TOP 5 
-    Producto, 
+    Categoria_Producto, 
     SUM(Cantidad) AS Unidades_Vendidas,
     FORMAT(SUM(Subtotal), 'C', 'es-MX') AS Ingreso_Total
 FROM vw_ReporteGlobalVentas
-WHERE Estatus_Venta NOT IN ('Cancelado', 'Revisar') -- Solo ventas efectivas
-GROUP BY Producto
+WHERE Estatus_Actual NOT IN ('Cancelado', 'Revisar') -- Solo ventas efectivas
+GROUP BY Categoria_Producto
 ORDER BY SUM(Subtotal) DESC;
 
 ----------------------------------------------------------------------------------------------------------------
@@ -71,13 +74,13 @@ ORDER BY SUM(Subtotal) DESC;
 ----------------------------------------------------------------------------------------------------------------
 
 SELECT 
-    Categoria, 
+    Categoria_Producto, 
     Canal,
     COUNT(*) AS Numero_Transacciones,
     FORMAT(SUM(Subtotal), 'C', 'es-MX') AS Total_Ventas
 FROM vw_ReporteGlobalVentas
-GROUP BY Categoria, Canal
-ORDER BY Categoria, Total_Ventas DESC;
+GROUP BY Categoria_Producto, Canal
+ORDER BY Categoria_Producto, Total_Ventas DESC;
 
 ----------------------------------------------------------------------------------------------------------------
 -- KPI 3: Análisis de Proveedores y Stock Crítico (BI Preventivo)

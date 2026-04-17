@@ -127,6 +127,7 @@ CREATE TABLE Ventas (
     IdProducto INT NOT NULL 
         CONSTRAINT FK_Vent_Prod FOREIGN KEY REFERENCES Productos(IdProducto),
     Cantidad INT NOT NULL,
+    Fecha DATETIME2 DEFAULT SYSUTCDATETIME(),
     Sucursal NVARCHAR(200) -- Ejemplo: 'Sucursal | Ubicación'
 );
 GO
