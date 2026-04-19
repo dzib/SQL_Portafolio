@@ -31,23 +31,35 @@
 
 ## 📊 Evidencias de Ejecución
 > Métricas finales optenidas del Script 05.
+![Resumen de Ejecución](./img/MetricasCierreScrip05_P2.png)
 
+---
 
-### 📈 Ranking Académico (Top 10)
-``
-Posicion	Nombre	Carrera	PromedioFinal
-1	Estudiante_ID_937	Ciencias de la Computación	95.75
-2	Estudiante_ID_678	Ingeniería de Datos	95.5
-3	Estudiante_ID_580	Ciencias de la Computación	95
-4	Estudiante_ID_761	Administración de Sistemas	93.25
-4	Estudiante_ID_607	Ciencias de la Computación	93.25
-6	Estudiante_ID_897	Ingeniería de Datos	92.75
-6	Estudiante_ID_505	Ciencias de la Computación	92.75
-8	Estudiante_ID_720	Ingeniería de Datos	92.25
-8	Estudiante_ID_551	Administración de Sistemas	92.25
-8	Estudiante_ID_976	Ciencias de la Computación	92.25
+## 📈 Rendimiento por Carrera (KPI Agregado)
+>> Reporte 1: Promedios Generales por Carrera
 
+| **#** | **Carrera**                | **TotalAlumnos** | **PromedioGeneral** | **NotaMinima** | **NotaMaxima** |
+|:-----:|:--------------------------:|:----------------:|:-------------------:|:--------------:|:--------------:|
+| **1** | Administración de Sistemas | 166              | 80                  | 60             | 99             |
+| **2** | Ciencias de la Computación | 167              | 79.72               | 60             | 99             |
+| **3** | Ingeniería de Datos        | 167              | 79.67               | 60             | 99             |
 
+### 📈 Ranking Académico (Top 10) 🚀
+
+>> Reporte 2: Cuadro de Honor 
+
+| **#**  | **Posicion** | **Nombre**        | **Carrera**                | **PromedioFinal** |
+|:------:|:------------:|:-----------------:|:--------------------------:|:-----------------:|
+| **1**  | 1            | Estudiante_ID_937 | Ciencias de la Computación | 95.75             |
+| **2**  | 2            | Estudiante_ID_678 | Ingeniería de Datos        | 95.5              |
+| **3**  | 3            | Estudiante_ID_580 | Ciencias de la Computación | 95                |
+| **4**  | 4            | Estudiante_ID_761 | Administración de Sistemas | 93.25             |
+| **5**  | 4            | Estudiante_ID_607 | Ciencias de la Computación | 93.25             |
+| **6**  | 6            | Estudiante_ID_897 | Ingeniería de Datos        | 92.75             |
+| **7**  | 6            | Estudiante_ID_505 | Ciencias de la Computación | 92.75             |
+| **8**  | 8            | Estudiante_ID_720 | Ingeniería de Datos        | 92.25             |
+| **9**  | 8            | Estudiante_ID_551 | Administración de Sistemas | 92.25             |
+| **10** | 8            | Estudiante_ID_976 | Ciencias de la Computación | 92.25             |
 
 ---
 
@@ -78,4 +90,4 @@ Posicion	Nombre	Carrera	PromedioFinal
 ---
 
 **Autor:** Alberto Dzib  
-**Versión:** 2.0.0
+**Versión:** 2.1.0
