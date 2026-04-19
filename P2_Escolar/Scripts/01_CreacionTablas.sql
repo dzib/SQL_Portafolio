@@ -49,39 +49,3 @@ CREATE TABLE EscolarDB.dbo.Asistencias (
     Fecha DATE,
     Presente BIT
 );
-
-
-------Ajustes adicionales a las tablas
--- Agregar variable fecha en tabal Alumnos
-ALTER TABLE EscolarDB.dbo.Alumnos
-ADD FechaInscripcion DATE
-
---Agregar variable fecha de creaciónen tabla cursos
-ALTER TABLE EscolarDB.dbo.Cursos
-ADD FechaCreacion DATE
-
---Agregar variable fecha en tabla Calificaciones
-ALTER TABLE EscolarDB.dbo.Calificaciones
-ADD Fecha DATE
-
---Agregar variable fecha de crontratación tabla profesores
-ALTER TABLE Profesores ADD FechaContratacion DATE
-
---Agregar variable descripción tabla departamentos
----ALTER TABLE EscolarDB.dbo.Departamentos
----ALTER COLUMN Descripcion NVARCHAR(50) NULL;
-
-ALTER TABLE EscolarDB.dbo.Departamentos
-ADD Descripcion NVARCHAR(50)
-
---Agregar variable rol en tabla CursosProfesores
-ALTER TABLE EscolarDB.dbo.CursosProfesores
-ADD Rol NVARCHAR(10)
-
---Agregar variable Aula en tabla Horarios
-ALTER TABLE EscolarDB.dbo.Horarios
-ADD Aula NVARCHAR(50)
-
-----Correcion en la tabla CursosProfesores, tamaño de la variable rol
-ALTER TABLE EscolarDB.dbo.CursosProfesores
-ALTER COLUMN Rol NVARCHAR(50)
