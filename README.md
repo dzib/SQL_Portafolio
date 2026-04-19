@@ -1,8 +1,8 @@
 # 📊 SQL Portafolio – SSMS 22
-Repositorio con tres proyectos en SQL Server Management Studio 22 (SSMS) que muestran mis habilidades en modelado de datos, generación masiva de datasets realistas y consultas analíticas.
+## 📖 Repositorio con tres proyectos en SQL Server Management Studio 22 (SSMS) que muestran mis habilidades en modelado de datos, generación masiva de datasets realistas y consultas analíticas.
 --
 
-Incluye:
+📑 Incluye:
 
 -Tablas jerárquicas y normalizadas
 -Diversidad temporal en registros
@@ -14,7 +14,7 @@ Incluye:
 
 - 🗂️ **Modelado de datos* y Tablas jerárquicas normalizadas*: diseño de esquemas relacionales con integridad referencial y reglas de negocio.
 - 📈 **Generación masiva de datasets realistas**
--    **Diversidad temporal en registos, fechas variadas para análisis de tendencias**
+- ⏳ **Diversidad temporal en registos, fechas variadas para análisis de tendencias**
 - 🔍 **Consultas analíticas para BI y dashboards**
 
 Cada proyecto simula un entorno de negocio distinto (Inventario, Escolar, Finanzas), demostrando versatilidad en el uso de SQL para distintos dominios.
