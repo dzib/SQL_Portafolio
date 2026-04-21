@@ -30,7 +30,7 @@
 ---
 
 ## 📊 Evidencias de Ejecución
-> Métricas finales optenidas del Script 05.
+> Métricas finales obtenidas del Script 05.
 ![Resumen de Ejecución](./img/MetricasCierreScrip05_P2.png)
 
 ---
