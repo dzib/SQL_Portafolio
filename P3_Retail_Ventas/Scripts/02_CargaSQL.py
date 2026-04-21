@@ -51,10 +51,10 @@ def ejecutar_ingesta():
         
         end_time = time.time()
         print("=====================================================")
-        print("         ✅ INGESTA COMPLETADA CON ÉXITO")
+        print("       ✅ INGESTA COMPLETADA CON ÉXITO")
         print("=====================================================")
         print(f"    ⏱️ Tiempo total: {round(end_time - start_time, 2)} segundos")
-        print(f"    📊 Destino: [dbo].[Staging_Ventas]")
+        print(f"📊 Destino: [dbo].[Staging_Ventas]")
         print("=====================================================")
 
     except Exception as e:
