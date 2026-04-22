@@ -2,11 +2,19 @@
 
 ## 📌 Descripción General
 * Implementación de una arquitectura híbrida avanzada para el procesamiento de Big Data, integrando Python como motor de orquestación y generación de datos, y SQL Server 2025 como motor de almacenamiento masivo, limpieza y normalización.
-  
+* Arquitectura diseñada para alta disponibilidad, capaz de escalar de 50k a 1M de registros manteniendo una tasa de ingesta de ~27,000 registros por segundo.
+
 ---
 
 ### 🎯 Objetivo
 * Diseñar un ecosistema capaz de generar, ingerir y procesar un volumen de 50,000 transacciones en tiempo récord, demostrando la eficiencia de la integración híbrida entre lenguajes de programación y motores de base de datos.
+
+```mermaid
+graph LR
+    A[Python: Faker/Pandas] -- SQLAlchemy/FastExec --> B[(SQL Server 2025)]
+    B -- T-SQL ETL/CTEs --> C[Tablas Producción]
+    C -- Puente Híbrido --> D[Python: Analítica BI]
+```
 
 ---
 
@@ -41,7 +49,8 @@
 | **3** | David Smith    | $42,933.17         | 15                      | $2,862.21           |
 | **4** | David Brown    | $39,371.30         | 12                      | $3,280.94           |
 | **5** | Amanda Johnson | $38,703.72         | 18                      | $2,150.21           |
-git
+
+
 ### 💳 Preferencias de Pago
 
 | **#** | **Método de Pago** | **Frecuencia** |
@@ -55,7 +64,7 @@ git
 1. *Sincronización de Middleware:*
    - *Problema:* Establecer una conexión persistente y segura entre el entorno virtual de Python y SQL Server 2025.
    - *Solución:* Configuración exitosa de ODBC Driver 17 y SQLAlchemy, permitiendo un flujo de datos bidireccional sin latencia.
-2. *Optimización de Hardware (I/O):*
+2. *Afinamiento de Infraestructura Local (I/O):*
    - *Problema:* Riesgo de cuellos de botella durante la escritura de 50k registros en el disco del sistema.
    - *Solución:* Expansión del volumen lógico del SSD (C:) y optimización del "Write Caching", logrando una mejora drástica en los tiempos de respuesta.
 3. *Colisiones de Unique Key (DDL/DML):*
