@@ -137,8 +137,8 @@ A lo largo de los proyectos se resolvieron desafíos complejos de arquitectura:
 
 
 ---
-**Contacto:** 🔗 linkedin.com/in/jesusalberto-dzib-ku | ✉️ dzibjesusalberto@gmail.com
-**Autor:** MIT © 2026 Jesús Alberto Dzib Ku 
-*Ingeniería de Datos | SQL & Python Developer* 
-🚧 *En constante evolución.*
+| **Contacto:** 🔗 linkedin.com/in/jesusalberto-dzib-ku | ✉️ dzibjesusalberto@gmail.com |
+ **Autor:** MIT © 2026 Jesús Alberto Dzib Ku | 
+ *Ingeniería de Datos | SQL & Python Developer* |
+ *🚧 En constante evolución.* | 
 
