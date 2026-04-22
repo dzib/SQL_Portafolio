@@ -36,12 +36,13 @@ graph LR
 ![CARGA DE DATOS PYTHON](./img/P3PY_Scrip01IngestaDatos.png)
 
 * 📈 Métricas de Analítica: Reporte generado en 0.537 segundos.
-![EJECUCIÓN DEL REPORTE BI](./EsteticaDatosEjecPYScrip03AnaliticaVentas.png)
+![EJECUCIÓN DEL REPORTE BI](./img/EsteticaDatosEjecPYScrip03AnaliticaVentas.png)
 
 ---
 
 ### 🏆 Cuadro de Honor: TOP 5 Vendedores (Ranking Global)
-> Análisis de desempeño basado en un volumen de 50,000 transacciones.
+> Análisis de desempeño basado en un volumen de 50,000 transacciones
+
 | **#** | **Vendedor**   | **Ventas Totales** | **Cant. Transacciones** | **Ticket Promedio** |
 |:-----:|:--------------:|:------------------:|:-----------------------:|:-------------------:|
 | **1** | Daniel Smith   | $44,820.80         | 15                      | $2,988.05           |
@@ -49,7 +50,6 @@ graph LR
 | **3** | David Smith    | $42,933.17         | 15                      | $2,862.21           |
 | **4** | David Brown    | $39,371.30         | 12                      | $3,280.94           |
 | **5** | Amanda Johnson | $38,703.72         | 18                      | $2,150.21           |
-
 
 ### 💳 Preferencias de Pago
 
@@ -78,4 +78,4 @@ graph LR
 ----
 
 *Autor:* Alberto Dzib
-*Versión:* 3.0.0
+*Versión:* 4.0.0
