@@ -1,12 +1,13 @@
 # 📘 Documentación Técnica – Proyecto P1_Inventario
 
 ## 📌 Descripción general
-El proyecto P1_Inventario implementa un esquema relacional en SQL Server Management Studio 22 (SSMS) para simular un sistema de gestión de inventario.
-Se diseñó con datos no atómicos (separados por |) de forma intencional, con el objetivo de demostrar procesos de normalización y limpieza (ETL) en fases posteriores.
+Este proyecto fundamenta el rigor transaccional y la lógica de normalización, manejando deliberadamente datos no atómicos para simular entornos legacy y procesos de remediación ETL.
+
 ---
 
-## 🏗️ Fases del proyecto
-1. Creación de tablas (Script 01_CreacionTablas.sql)
+## 🏗️ Ciclo de Vida del Dato
+
+* Fase 1: Diseño de Esquema e Integridad Referencial. (Script 01_CreacionTablas.sql)
 -Se definen las tablas maestras, operativas y transaccionales.
 -Se incluyen llaves primarias (`PK`), llaves foráneas (`FK`) y restricciones de negocio (`CHECK`, `UNIQUE`).
 -Ejemplo de reglas de negocio:
@@ -14,11 +15,11 @@ Se diseñó con datos no atómicos (separados por |) de forma intencional, con e
 	-`CHK_FmtEstado`: obliga a que el campo `Estado` en pedidos tenga el formato `Estado | Acción`.
 	-`IsActive` en proveedores: implementa borrado lógico.
 
-2. Datos iniciales (Script 02_DatosIniciales.sql)
+* Fase 2: Datos iniciales. (Script 02_DatosIniciales.sql)
 -Inserción manual de registros base para pruebas rápidas.
 -Ejemplo: categorías iniciales como`Software | Licencias`, `Hardware | Equipos`.
 
-3. Generación masiva de datos (Script 03_InsertMasivoDatos.sql)
+* Fase 3: Generación masiva de datos. (Script 03_InsertMasivoDatos.sql)
 -Inserción de 500 registros aleatorios en clientes, productos, pedidos y ventas.
 -Uso de funciones como `RAND()`, `NEWID()` y `CHOOSE()` para diversificar datos.
 -Manejo de transacciones con `TRY…CATCH` para rollback seguro.
@@ -26,12 +27,12 @@ Se diseñó con datos no atómicos (separados por |) de forma intencional, con e
 	-Conteo de registros por tabla.
 	-Tiempo total de ejecución en milisegundos.
 
-4. Limpieza y normalización (Script 04_LimpiezaDatos_ETL.sql)
+* Fase 4: Pipeline de Limpieza y Normalización (ETL). (Script 04_LimpiezaDatos_ETL.sql)
 -Procesos de ETL para transformar datos “sucios” en valores normalizados.
 -Ejemplo: separar `Mérida | YUC` en columnas `Ciudad = Mérida`, `Estado = Yucatán`.
 -Preparación de datos para análisis en BI.
 
-5. Reportes ejecutivos (Script 05_Reportes_BI.sql)
+* Fase 5: Reportes ejecutivos (Script 05_Reportes_BI.sql)
 -Consultas analíticas para dashboards.
 -Ejemplos:
 	-Ventas por sucursal.
@@ -40,11 +41,13 @@ Se diseñó con datos no atómicos (separados por |) de forma intencional, con e
 ---
 
 ## 📊 Ejemplo de métricas de ejecución
-Tras la carga masiva de datos:
 
-| Categorías | Proveedores | Clientes | Productos | Pedidos | DetallePedido | Pagos | Ventas | TiempoTotal_ms |
-| :--------- | :---------- | :------- | :-------- | :------ | :------------ | :---- | :----- | :------------- |
-| 100 | 100 | 500 | 500 | 500 | 500 | 500 | 500 | 1776 |
+| **#** | **Dimensión**       | **Registros** | **Operación**                | **Performance** |
+|:-----:|:-------------------:|:-------------:|:----------------------------:|:---------------:|
+| 1     | Carga Transaccional | 3,200 (Total) | Inserción Masiva Aleatoria   | 1,776 ms        |
+| 2     | Integridad          | 100 %          | Validación de PK/FK y CHECK  | Verificado      |
+| 3     | Normalización       | 500 + filas    | Separación de Metadata (ETL) | < 1 s            |
+
 ---
 
 ## 📂 Estructura del proyecto
@@ -63,3 +66,11 @@ P1_Inventario/
 │   └── Program.cs
 └── Documentacion.md
 ```
+
+---
+## 🛠️ Key Engineering Feature
+
+- **Idempotencia:** Scripts diseñados con `DROP IF EXISTS` para permitir despliegues continuos sin errores.
+- **Borrado Lógico:** Implementación de `IsActive` para preservar la trazabilidad histórica de proveedores.
+- **Seguridad:** Bloques `BEGIN TRANSACTION` con `ROLLBACK` automático para prevenir corrupción en fallos de carga masiva.
+
