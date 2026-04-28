@@ -1,0 +1,15 @@
+# Entornos virtuales
+.venv/
+env/
+venv/
+
+# Datos y Configuración
+.env
+data/
+*.csv
+*.xlsx
+*.parquet
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
