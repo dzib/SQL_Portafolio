@@ -25,8 +25,8 @@ venv/
 
 # Datos y Configuración
 .env
-data/
-*.csv
+**/data/
+**/*.csv
 *.xlsx
 *.parquet
 
