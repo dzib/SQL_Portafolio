@@ -1,11 +1,35 @@
 ﻿################################################################################
 # Este archivo .gitignore ha sido creado automáticamente por Microsoft(R) Visual Studio.
 ################################################################################
-.venv/
-.venv-1/
 .vs/
 bin/
 obj/
 *.slnx
 *.sqlite
 test_python.py
+
+# Windows
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# VS Code config de usuario
+.vscode/
+.history/
+
+# Entornos virtuales
+.venv/
+.venv-1/
+env/
+venv/
+
+# Datos y Configuración
+.env
+data/
+*.csv
+*.xlsx
+*.parquet
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
