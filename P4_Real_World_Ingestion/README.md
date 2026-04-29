@@ -17,8 +17,11 @@ Construir un pipeline híbrido de alto rendimiento para procesar datasets reales
 4. **04_ETL_Cleaning:** Estandarización y calidad de datos.
 5. **05_BI_Observabilidad:** Análisis de desempeño logístico.
 
-## 🛠️ 📝
-- **"Reto Técnico: Scope de variables en lotes SQL (GO)"**
+## Evidencia Cuantitativa:
+*resumen del éxito de la ingesta. / "180k registros | 7.5s | 23.8k reg/seg" /
+
+## 📝 Diagnosticos y soluciones técnicas:
+- **"Scope de variables en lotes SQL (GO)**
 Este error ocurrió porque en SQL Server, cuando usamos la palabra clave `GO`, el motor de base de datos finaliza el lote (batch) y "olvida" las variables declaradas anteriormente. Al tener un `GO` después de declarar @StartTime, la variable de tiempo dejó de existir para el bloque siguiente.
 
 - **Error en `FROM Analytics.SupplyChain_Shipments`**
@@ -41,3 +44,16 @@ Asegurar de que no haya un `GO` que esté confundiendo a la extensión
 - Causa: SQL Server protege la integridad referencial impidiendo el borrado de columnas que tienen objetos dependientes activos.
 - **Solución Aplicada:**
 Se procedió con la ejecución del pipeline principal, validando que el script de limpieza fuera capaz de manejar la existencia previa de la columna mediante el bloque `IF NOT EXISTS` y SQL Dinámico (`sp_executesql`).
+
+- **Reto Técnico: Sincronización de dependencias en Jupyter Kernels / Solución "Quick-Fix"**
+- Reto: Forzar el reconocimiento de las librerías en .venv. Aplicando el símbolo `%` obliga a Jupyter a instalar las librerías exactamente en el Kernel seleccionado.
+- Causa: A veces, al crear el .venv desde la terminal de Windows, Jupyter no vincula correctamente el "sitio de paquetes" hasta que se realiza una instalación interna o un reinicio del proceso del kernel.
+- - **Solución Aplicada:**
+Instalación desde el propio Notebook se crea una celda nueva al principio y se ejecuta: `%pip install pandas pygwalker sqlalchemy pyodbc python-doten`.
+
+- **Higiene de Proyecto creación de un Script de "Hotfix"**
+- Reto: Inconsistencia de valores NULL tras agregar columna BIT con DEFAULT.
+- Lección Aprendida: En SQL Server, un `DEFAULT constraint` solo afecta a nuevas inserciones; los registros existentes requieren un `UPDATE` explícito para mantener la integridad de los filtros (evitando el error de división por cero en capas de visualización).
+-- **Solución Aplicada:**
+Ejecutar el `UPDATE` con apoyo del script nuevo.
+Ejecutar el script de verificación (02_Verificacion_reg.sql) para confirmar que la "herida" de los nulos está cerrada.
