@@ -9,7 +9,8 @@ Este proyecto fundamenta el rigor transaccional y la lógica de normalización, 
 ### 🎯 Objetivo
 *Generar un ecosistema capaz de ingerir y procesar un volumen de transacciones, demostrando eficiencia con una integración híbrida entre lenguajes de programación y motores de base de datos.
 
-```graph LR
+```mermaid
+graph LR
 A[Generación Batch: T-SQL/Faker] -- "Stress Test (Script 03)" --> B[(SQL Server 2025)]
 B -- "Pipeline ETL: Script 04 (Normalización)" --> C[Tablas Producción / Vistas BI]
 C -- "Puente ODBC / Power Query" --> D[Excel Dashboard: Modo Oscuro]
