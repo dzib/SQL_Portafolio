@@ -1,103 +1,97 @@
 /* 
 ==================================================================================================
-PROYECTO: P1_Inventario | Fase 5: Business Intelligence (BI) & Consultas Analíticas
+PROYECTO: P1_Inventario -Sistema de Gestión de Inventario-
+FASE 5: (SQL) - Business Intelligence (BI) & Capa de Analytics
 AUTOR: Alberto Dzib
-VERSIÓN: 1.0
-DESCRIPCIÓN: Creación de Vistas y KPIs para la toma de decisiones. 
-             Este script consolida las ventas y analiza el rendimiento del inventario.
+VERSIÓN: 2.0
+DESCRIPCIÓN:
+    - Creación del esquema Analytics para segregación de reportes.
+    - Vista Global de Ventas: Unifica Pedidos (Online) y Ventas (Mostrador).
+    - KPIs Ejecutivos: Top Sellers, Desempeño por Canal y Alertas Logísticas.
+    - Este script consolida las ventas y analiza el rendimiento del inventario.
 ==================================================================================================
 */
 
 USE P1_Inventario;
 GO
 
-----------------------------------------------------------------------------------------------------------------
-PRINT '--- PASO 1: CREANDO VISTA CONSOLIDADA DE INGRESOS ---';
--- Esta vista se une Pedidos Online y Ventas de Mostrador en un solo reporte lógico.
-----------------------------------------------------------------------------------------------------------------
--- Eliminamos la vista si existe para evitar conflictos de recreación
-IF OBJECT_ID('vw_ReporteGlobalVentas', 'V') IS NOT NULL DROP VIEW vw_ReporteGlobalVentas;
+-- --------------------------------------------------------------------------------------------------------------
+-- 1. CREACIÓN DE ESQUEMA ANALÍTICO
+-- --------------------------------------------------------------------------------------------------------------
+IF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = 'Analytics') EXEC('CREATE SCHEMA Analytics');
 GO
 
-CREATE VIEW vw_ReporteGlobalVentas AS
--- Fuente 1: Pedidos realizados a través del sistema (E-Commerce)
+-- Esta vista se une Pedidos Online y Ventas de Mostrador en un solo reporte lógico.
+
+PRINT '--- PASO 1: CREANDO VISTA CONSOLIDADA DE INGRESOS (OMNICHANNEL) ---';
+GO 
+
+CREATE OR ALTER VIEW Analytics.vw_ReporteGlobalVentas AS
 SELECT 
     'Pedido Online' AS Canal,
     p.FechaPedido AS Fecha_Transaccion,
-    c.Nombre AS Entidad_Destino,
+    c.Nombre AS Entidad_Origen,
     cat.Nombre AS Categoria_Producto,
     pr.Nombre AS Nombre_Producto,
     dp.Cantidad,
     dp.PrecioUnitario,
     (dp.Cantidad * dp.PrecioUnitario) AS Subtotal,
-    p.Estado AS Estatus_Actual --En este paso se usa el estado ya limpio por el Script 04
-FROM Pedidos p
-JOIN Clientes c ON p.IdCliente = c.IdCliente
-JOIN DetallePedido dp ON p.IdPedido = dp.IdPedido
-JOIN Productos pr ON dp.IdProducto = pr.IdProducto
-JOIN Categorias cat ON pr.IdCategoria = cat.IdCategoria
-
+    p.Estado_Info AS Estatus_Actual 
+FROM Operaciones.Pedidos p
+JOIN Operaciones.Clientes c ON p.ClienteID = c.ClienteID
+JOIN Operaciones.DetallePedido dp ON p.PedidoID = dp.PedidoID
+JOIN Inventario.Productos pr ON dp.ProductoID = pr.ProductoID
+JOIN Inventario.Categorias cat ON pr.CategoriaID = cat.CategoriaID
 UNION ALL
-
--- Fuente 2: Ventas directas registradas en sucursal (Punto de Venta)
 SELECT 
     'Venta Mostrador' AS Canal,
-    v.Fecha AS Fecha_Transaccion,
-    v.Sucursal AS Entidad,
-    cat.Nombre AS Categoria,
-    pr.Nombre AS Producto,
+    v.FechaVenta AS Fecha_Transaccion,
+    v.Sucursal_Info AS Entidad_Origen,
+    cat.Nombre AS Categoria_Producto,
+    pr.Nombre AS Nombre_Producto,
     v.Cantidad,
-    pr.Precio AS PrecioUnitario,
-    (v.Cantidad * pr.Precio) AS Subtotal,
-    'Completado' AS Estatus_Actual
-FROM Ventas v
-JOIN Productos pr ON v.IdProducto = pr.IdProducto
-JOIN Categorias cat ON pr.IdCategoria = cat.IdCategoria;
+    v.PrecioAplicado AS PrecioUnitario,
+    (v.Cantidad * v.PrecioAplicado) AS Subtotal,
+    'PAGADO | COMPLETADO' AS Estatus_Actual
+FROM Operaciones.Ventas_Mostrador v
+JOIN Inventario.Productos pr ON v.ProductoID = pr.ProductoID
+JOIN Inventario.Categorias cat ON pr.CategoriaID = cat.CategoriaID;
 GO
 
 ----------------------------------------------------------------------------------------------------------------
-PRINT '--- PASO 2: GENERANDO KPIS EJECUTIVOS ---';
--- KPI 1: Los 5 productos más vendidos (Top Sellers)
-----------------------------------------------------------------------------------------------------------------
-
+PRINT '--- PASO 2: GENERANDO KPIS EJECUTIVOS (PRUEBA DE CONCEPTO) ---';
+GO
+-- --------------------------------------------------------------------------------------------------------------
+-- KPI 1: Salud del Inventario (BI Preventivo)
+-- --------------------------------------------------------------------------------------------------------------
+CREATE OR ALTER VIEW Analytics.vw_Alerta_Logistica AS
+SELECT 
+    prov.Nombre AS Proveedor,
+    prod.Nombre AS Producto,
+    prod.StockActual,
+    prod.StockMinimo,
+    CASE 
+        WHEN prod.StockActual <= prod.StockMinimo THEN '🚨 REABASTECIMIENTO URGENTE'
+        WHEN prod.StockActual <= prod.StockMinimo * 1.5 THEN '⚠️ STOCK BAJO'
+        ELSE '✅ SALUDABLE'
+    END AS Semaforo_Logistico
+FROM Inventario.Proveedores prov
+JOIN Inventario.Productos prod ON prov.ProveedorID = prod.ProveedorID;
+GO
+---------------------------------------------------------------------------------------------------------------
+-- KPI 2: Top 5 Categorías por Ingreso (Para Gráfico de Pastel en Excel) (Top Sellers)
+-- --------------------------------------------------------------------------------------------------------------
 SELECT TOP 5 
     Categoria_Producto, 
     SUM(Cantidad) AS Unidades_Vendidas,
     FORMAT(SUM(Subtotal), 'C', 'es-MX') AS Ingreso_Total
-FROM vw_ReporteGlobalVentas
-WHERE Estatus_Actual NOT IN ('Cancelado', 'Revisar') -- Solo ventas efectivas
+FROM Analytics.vw_ReporteGlobalVentas
+WHERE UPPER(Estatus_Actual) NOT LIKE '%Cancelado%' -- Filtro de integridad forzamos mayúsculas para comparar.
 GROUP BY Categoria_Producto
 ORDER BY SUM(Subtotal) DESC;
-
-----------------------------------------------------------------------------------------------------------------
--- KPI 2: Rendimiento por Categoría y Canal
-----------------------------------------------------------------------------------------------------------------
-
-SELECT 
-    Categoria_Producto, 
-    Canal,
-    COUNT(*) AS Numero_Transacciones,
-    FORMAT(SUM(Subtotal), 'C', 'es-MX') AS Total_Ventas
-FROM vw_ReporteGlobalVentas
-GROUP BY Categoria_Producto, Canal
-ORDER BY Categoria_Producto, Total_Ventas DESC;
-
-----------------------------------------------------------------------------------------------------------------
--- KPI 3: Análisis de Proveedores y Stock Crítico (BI Preventivo)
-----------------------------------------------------------------------------------------------------------------
-
-SELECT 
-    prov.Nombre AS Proveedor,
-    prov.Rubro,
-    COUNT(prod.IdProducto) AS Total_Productos,
-    SUM(prod.Stock) AS Existencias_Totales,
-    CASE 
-        WHEN SUM(prod.Stock) < 50 THEN 'REABASTECIMIENTO URGENTE'
-        WHEN SUM(prod.Stock) BETWEEN 50 AND 150 THEN 'STOCK SALUDABLE'
-        ELSE 'SOBRESTOCK'
-    END AS Alerta_Logistica
-FROM Proveedores prov
-LEFT JOIN Productos prod ON prov.IdProveedor = prod.IdProveedor
-GROUP BY prov.Nombre, prov.Rubro
-ORDER BY Existencias_Totales ASC;
 GO
+
+PRINT '=====================================================';
+PRINT '✅ Fase 1.5: Capa de Analytics (Omnicanal) Finalizada';
+PRINT '⏱️ Tiempo de validación: ' + CAST(DATEDIFF(MS, GETDATE(), GETDATE()) AS VARCHAR) + ' ms';
+PRINT '=====================================================';
