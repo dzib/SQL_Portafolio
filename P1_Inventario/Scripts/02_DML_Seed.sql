@@ -25,7 +25,7 @@ INSERT INTO Inventario.Categorias (Nombre, Descripcion) VALUES
 ('Mobiliario | Oficina', 'Sillas y escritorios ergonómicos para trabajo');
 
 PRINT 'Insertando Proveedores...';
-INSERT INTO Inventario.Proveedores (Nombre, Telefono, Ciudad, IsActive) VALUES 
+INSERT INTO Inventario.Proveedores (Nombre, Telefono, Ciudad_Estado, IsActive) VALUES 
 ('Dell México | Mayorista', '555-0192', 'CDMX | Centro', 1),
 ('Tech Solutions | Distribuidor', '999-1234', 'Mérida | Yucatán', 1),
 ('Office Global | Mobiliario', '818-7654', 'Monterrey | Nuevo León', 1);
