@@ -50,10 +50,16 @@ GO
 -- 2. CREACIÓN DE ESQUEMAS (ORGANIZACIÓN EMPRESARIAL)
 -- Catálogos base (Nivel de normalización 1)
 -- -----------------------------------------------------------------------------------------------
-CREATE SCHEMA Inventario;
+IF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = 'Inventario') 
+BEGIN
+    EXEC('CREATE SCHEMA Inventario');
+END
 GO
 
-CREATE SCHEMA Operaciones;
+IF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = 'Operaciones') 
+BEGIN
+    EXEC('CREATE SCHEMA Operaciones');
+END
 GO
 
 DECLARE @StartTime DATETIME2 = SYSUTCDATETIME(); -- Para métricas de tiempo de ejecución.
@@ -73,7 +79,7 @@ CREATE TABLE Inventario.Proveedores (
     ProveedorID INT PRIMARY KEY IDENTITY(1,1),
     Nombre NVARCHAR(200) NOT NULL,  -- Formato: 'Razón Social | Tipo'
     Telefono NVARCHAR(50),
-    Ciudad_Estado NVARCHAR(200),           -- Formato: 'Ciudad | Estado'
+    Ciudad_Estado NVARCHAR(200),          -- Formato: 'Ciudad | Estado'
     IsActive BIT DEFAULT 1          -- 1 = Activo, 0 = Inactivo (Soft Delete)
 );
 
