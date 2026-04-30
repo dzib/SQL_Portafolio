@@ -1,7 +1,8 @@
 # 🚀 SQL & Data Engineering Portfolio - 👷 Alberto Dzib 📊
 
+![Portafolio](https://img.shields.io/badge/github-repo-blue?logo=github)
 ![SQL Server](https://img.shields.io/badge/SQL_Server-2025-blue)
-![Python](https://img.shields.io/badge/Python-3.13-yellow)
+![Python](https://img.shields.io/badge/Python-3.14-yellow)
 ![Power BI](https://img.shields.io/badge/PowerBI-Dashboard-orange)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
@@ -40,16 +41,40 @@ En este portafolio se buscó aplicar un rigor de ingeniería en cada línea de c
   - **Performance:** Monitoreo de tiempos de ejecución en milisegundos para procesos masivos.
   - **Git Flow:** Gestión de ramas (`Feature` -> `Develop` -> `Main`) y `SemVer`.
 
+###  Matriz de Competencias Técnicas (Key Skills)
+
+| **Tecnología**  | **Badges**                                                                                                                | **Especialidad y Dominio**                                                                               |
+|:---------------:|:-------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------------------------------------------:|
+| SQL Server      |![SQL](https://learn.microsoft.com/en-us/training/achievements/configure-sql-server-resources-for-optimal-performance.svg) | Diseño de esquemas relacionales, Window Functions, T-SQL dinámico y optimización de índices.             |
+| Python          |![Python](https://img.icons8.com/?size=128&id=OhhCHl3xDHfn&format=png)                                                     | Orquestación de pipelines, manipulación de grandes volúmenes de datos y automatización de procesos ETL.  |
+| Data Viz        |![Dashboard](https://img.icons8.com/?size=160&id=wWncQUpoODJf&format=png)                                                  |  Creación de dashboards interactivos, análisis exploratorio de datos (EDA) y reportes ejecutivos.         |
+| Infraestructura |![Tropy](https://learn.microsoft.com/en-us/training/achievements/understand-data-concepts.svg)                             | Gestión de versiones, automatización de servicios de SO y configuración de entornos de alto rendimiento. |
+
+---
+
+### Diagrama de Arquitectura Global
+
+```mermaid
+graph LR
+    A[Fuentes: CSV/Kaggle/Faker] -- Python Ingestion --> B[(SQL Server 2025)]
+    B -- T-SQL ETL --> C{Data Warehouse}
+    C -- SQL Views --> D[Power BI / PyGWalker]
+    style B fill:#0078D4,color:#fff
+    style D fill:#F2C811,color:#000
+```
+
 ---
 ## 📊 Métricas de Impacto y Performance (Hito v3.0)
+
 > *Benchmarks ejecutados en entorno local optimizado (SSD Expansion & Write Caching).*
 
-| Categoría              | Métrica                  | Benchmark               | Stack Clave                        | Estado |
-|:----------------------:|:------------------------:|:-----------------------:|:----------------------------------:|:------:|
-| **Ingesta Masiva**     | Velocidad de Carga       | **1.84 s** (50,000 reg.)| `SQLAlchemy` + `fast_executemany`  | ✅     |
-| **Transformación (ETL)**| Limpieza y Normalización | **809 ms**              | `T-SQL` + `CTEs` + `Materialización` | ✅   |
-| **Analítica de Negocio**| Tiempo de Respuesta BI  | **0.53 s**              | `Pandas` + `DirectQuery Ready`     | ✅     |
-| **Confiabilidad**      | Ratio de Idempotencia    | **100 %**               | `TRY/CATCH` + `DBCC CHECKIDENT`    | ⚡     |
+| **Categoría**            | **Métrica**              | **Benchmark**                 | **Proyecto Clave** | **Estado** |
+|:------------------------:|:------------------------:|:-----------------------------:|:------------------:|:----------:|
+| **Ingesta Masiva**       | Velocidad de Carga       | **23.8k reg/seg** (180k tot.) | P4_SupplyChain     | 🚀         |
+| **Transformación (ETL)** | Limpieza y Normalización | **644 ms** (Fase 4.4)         | P4_SupplyChain     | ✅         |
+| **Analítica de Negocio** | Dashboard Interactivo    | Latencia Cero                 | PyGWalker          | 📊         |
+| **Arquitectura**         | Integridad Transaccional | **100%** Atomicidad           | TRY/CATCH          | 🛡️         |
+
 
 ---
 
@@ -60,44 +85,86 @@ El repositorio está organizado por proyectos independientes, cada uno con su pr
 - `📂 P1_Inventario`: Gestión de stock y fundamentos relacionales.
 - `📂 P2_Escolar`: Arquitectura avanzada, esquemas segregados y limpieza con CTEs.
 - `📂 P3_Retail_Ventas`: Pipeline híbrido (Python + SQL) y procesamiento de Big Data.
+- `📂 P4_Real_Word_Ingestion`: Soluciones con enfoque en Cadenas de Suministro y Eficiencia Logística.
 - `📝 README Y DOCUMENTACIÓN :` Documentación por proyecto de sus estándares y "Lineamientos de Estructura" aplicados.
+
 
 ```text
 SQL_Portafolio/
-├── P1_Inventario/              # Gestión de Stock y Fundamentos Relacionales
+├── 📂 P1_Inventario/           # Gestión de Stock y Fundamentos Relacionales (SQL Puro)
 │   ├── Scripts/                # Pipeline 01-05 (SQL Puro)
 │   └── Documentacion.md
-├── P2_Escolar/                 # Arquitectura Avanzada y ETL con CTEs
+├── 📂 P2_Escolar/              # Arquitectura Avanzada y ETL con Window Functions
 │   ├── Scripts/                # Pipeline 01-05 (SQL Pro)
 │   ├── img/                    # Evidencias de Ranking y Métricas
 │   └── Documentacion.md
-└── P3_Retail_Ventas/           # Pipeline Híbrido Big Data (Python + SQL)
-    ├── Scripts/                # Scripts .py y .sql (Orquestación Híbrida)
-    ├── Datos/                  # Datasets generados (50,000 registros)
-    ├── img/                    # Dashboards de Analítica
-    └── Documentacion.md
+├── 📂 P3_Retail_Ventas/        # Pipeline Híbrido Big Data (Python + SQL sintético)
+│   ├── Scripts/                # Scripts .py y .sql (Orquestación Híbrida)
+│   ├── Datos/                  # Datasets generados (50,000 registros)
+│   ├── img/                    # Dashboards de Analítica
+│   └── Documentacion.md
+├── 📂 P4_Global_SupplyChain/   # HITO ORO: Ingesta Real Kaggle + Dashboard Interactivo
+│   ├── 01_Setup_DDL/           # Esquemas y constraints de alta precisión
+│   ├── 02_Ingesta_Pro/         # Orquestación Python (23.8k reg/seg)
+│   ├── 03_Orquestacion_Trans/  # Lógica atómica y manejo de TRY/CATCH
+│   ├── 04_ETL_Cleaning/        # Normalización y detección de anomalías
+│   ├── 05_BI_Observabilidad/   # Vistas SQL y Dashboard PyGWalker
+│   ├── img/                    # Evidencias de performance y BI
+│   └── Documentacion.md
+└── 📄 README.md                # Documentación Maestra del Portafolio
 ```
+
+---
+
+## **🏢 Casos de Negocio: Impacto de la Ingeniería de Datos**
+
+### **🛒 Retail & Global Supply Chain (Inspiración: Corporación multinacional enfoque retail )**
+
+- **Problema:** Inconsistencias en el estatus de entrega y pérdidas financieras ocultas por datos mal tipados.
+- **Solución:** Pipeline híbrido que ingesta 180,000 registros, detecta anomalías financieras mediante **SQL Dinámico** y normaliza el riesgo de entrega.
+- **Impacto:** Visibilidad total del 100% de la cadena de suministro con métricas de eficiencia por región en tiempo real.
+
+### **🏭 Manufactura y Logística (Inspiración: AB InBev)**
+
+- **Problema:** Cuellos de botella en la carga de inventarios masivos que retrasan la toma de decisiones operativa.
+- **Solución:** Optimización de I/O a nivel hardware y uso de `fast_executemany` en Python para reducir tiempos de carga en un 90%.
+- **Impacto:** Reducción del tiempo de procesamiento de minutos a segundos, permitiendo reportes de inventario sub-segundo.
 
 ---
 
 ## 📁 Proyectos destacados
 
+### **🛒 [P4] Global Supply Chain Analytics (v4.0.0) - Nuevo**
+
+*Ingesta de datos reales (Kaggle) y visualización de vanguardia.*
+
+- **Performance:** Ingesta récord de **180,000 registros** a **23.8k reg/seg**.
+- **Ingeniería:** Detección de anomalías financieras e integridad post-DDL mediante **SQL Dinámico**.
+- **BI:** Dashboard interactivo integrado en VS Code con **PyGWalker** para análisis exploratorio.
+- **Key Skills:** Data Analytics, Troubleshooting de Entorno, Orquestación Transaccional.
+
 ### 🐍 [P3] Pipeline Híbrido: Retail & Big Data (v3.0.0)
+
 *Integración avanzada de Python y SQL para el procesamiento de volúmenes masivos.*
+
 - **Ingesta:** Generación y carga de **50,000 registros** sintéticos en **1.84 segundos**.
 - **ETL:** Normalización de metadatos no  atómicos  mediante **CTEs** y actualización masiva (809 ms).
 - **BI:** Reporte de analítica en consola con **Pandas**, logrando tiempos de respuesta de **0.53 s**.
 - **Key Skills:** Orquestación híbrida, Middleware ODBC, Optimización de I/O.
 
 ### 🎓 [P2] Sistema de Gestión Académica (v2.1.0)
+
 *Arquitectura relacional robusta y procesos de limpieza profunda.*
+
 - **Estructura:** Diseño de esquemas segregados (`Catálogos`, `Operaciones`).
 - **Calidad:** Implementación de bloques **TRY/CATCH**, transacciones y manejo de desbordamientos decimales.
 - **ETL:** Transformación de strings complejos en datos tipados (`DATETIME2`, `DECIMAL`).
 - **Key Skills:** Window Functions (RANK), Idempotencia (`RESEED`), Constraints Nominados.
 
 ### 📦 [P1] Control de Inventarios (v1.0.0)
+
 *Fundamentos de bases de datos y gestión de stock.*
+
 - **Lógica:** Implementación de CRUD básico y lógica de inventarios.
 - **Ejemplos:** De limpieza de datos (ETL) y reportes ejecutivos.
 - **Key Skills:** PK/FK, Joins básicos, Relaciones 1:N.
@@ -114,31 +181,53 @@ En cada proyecto aplico rigor de ingeniería para asegurar código de nivel empr
 
 ---
 
-## ⚠️ Retos técnicos
-A lo largo de los proyectos se resolvieron desafíos complejos de arquitectura:
-- **Pipeline Híbrido:** Ingesta de 50,000 registros desde Python a SQL en < 2 segundos.
-- **Normalización ETL:** Transformación de metadatos no atómico mediante expresiones de tabla comunes (CTEs).
-- **Optimización I/O:** Configuración de hardware y memoria virtual para el manejo de datasets masivos.
+## **⚠️ Retos Técnicos y Resolución de Problemas (Troubleshooting)**
+
+A lo largo del portafolio, se han documentado y resuelto desafíos críticos de ingeniería que simulan entornos de producción real:
+
+- **Ingesta de Datos a Escala Industrial:** Superación de cuellos de botella en la red mediante el uso de `fast_executemany` y optimización de I/O en hardware, logrando el récord de **23.8k reg/seg**.
+- **Gestión de Metadatos y SQL Dinámico:** Resolución de conflictos de compilación al modificar esquemas en tiempo real (DDL/DML) mediante el uso de `sp_executesql` y manejo de lotes de ejecución.
+- **Integridad de Datos en Pipelines Híbridos:** Gestión de valores `NULL` y colisiones de tipos de datos tras la migración de archivos crudos (CSV/Excel) hacia motores relacionales.
+- **Higiene y Salud del Ecosistema:** Control manual de servicios de base de datos (`sqlon/sqloff`) y configuración de entornos aislados (`.venv`) para garantizar la portabilidad y el rendimiento.
 
 ---
 
-## 💾 Uso del repositorio
-1. **Explorar por carpeta:** Cada proyecto contiene una subcarpeta `Scripts/` con el orden de ejecución (01, 02, etc.).
-2. **Consultar Documentación:** Cada proyecto incluye un `Documentación.md` con evidencias visuales y métricas de rendimiento.
-3. **Requisitos:** Tener instalado SQL Server 2025 y el Driver ODBC 17 para las integraciones con Python.
+## **💾 Guía de Uso del Repositorio**
+
+Este portafolio está diseñado para ser auditable y reproducible:
+
+1. **Exploración por Proyectos:** Cada carpeta (`P1` a `P4`) contiene una secuencia numerada (01-05) que representa el ciclo de vida del pipeline.
+2. **Documentación de Proyecto:** Cada subcarpeta incluye su propio `README.md` detallando métricas de performance específicas y evidencias visuales (`/img`).
+3. **Requisitos de Entorno:**
+    - SQL Server 2025 | SSMS 22.
+    - Python 3.14 con librerías `pandas`, `sqlalchemy`, `pyodbc`, `pygwalker`.
+    - Driver ODBC 17 para SQL Server.
 
 ---
 
-## 🚩 Roadmap
-- [ ] **Dockerización:** Implementar contenedores para el despliegue rápido de entornos SQL.
-- [ ] **Data Visualization:** Conexión de pipelines a herramientas de visualización (**Power BI / Tableau**) para dashboards dinámicos.
-- [ ] **Automatización:** Aplicando scripts mediante **Task Schedulers**.
-- [ ] **Cloud Migration:** Explorar la migración de procesos ETL hacia Azure SQL Database.
+## 🚩 **Roadmap de Evolución**
 
+Mi meta es la automatización total y la integración con la nube:
+
+- [ ] **Dockerización (Próximo proyecto):** Implementación de contenedores Docker para orquestar servicios de SQL Server y Python de forma portable.
+- [ ] **Cloud Bridge:** Migración de pipelines hacia **Azure SQL Database** y automatización con **GitHub Actions** (CI/CD).
+- [ ] **Visualización Avanzada:** Integración de los flujos analíticos actuales con **Power BI** mediante DirectQuery.
+- [ ] **Orquestación de Procesos:** Automatización de tareas masivas mediante **Task Schedulers** y monitoreo de salud de datos.
 
 ---
-| **Contacto:** 🔗 linkedin.com/in/jesusalberto-dzib-ku | ✉️ dzibjesusalberto@gmail.com |
- **Autor:** MIT © 2026 Jesús Alberto Dzib Ku | 
- *Ingeniería de Datos | SQL & Python Developer* |
- *🚧 En constante evolución.* | 
 
+### **👤 Sobre Mí**
+
+**Ingeniero de Soluciones de Datos** con experiencia en ecosistemas corporativos de alto nivel (**SAP HANA, Salesforce, KoboToolbox**). Mi enfoque combina el rigor técnico del desarrollo de software con la visión estratégica de la logística y la cadena de suministro (AB InBev). Especializado en transformar datos crudos y desordenados en activos de información para la toma de decisiones.
+
+---
+
+
+| **Contacto:**  [LinkedIn](https://www.linkedin.com/in/jesusalberto-dzib-ku/) | **✉️ dzibjesusalberto@gmail.com** |
+|:----------------------------------------------------------------------------:|:---------------------------------:|
+| **Autor:**  Jesús Alberto Dzib Ku                                            | **Licencia:** MIT © 2026          |
+|  *Ingeniería de Datos*                                                       | *SQL & Python Developer*          |
+
+*🚧 En constante evolución.*
+
+---
