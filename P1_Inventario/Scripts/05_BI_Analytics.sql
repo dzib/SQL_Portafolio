@@ -71,9 +71,9 @@ SELECT
     prod.StockActual,
     prod.StockMinimo,
     CASE 
-        WHEN prod.StockActual <= prod.StockMinimo THEN '🚨 REABASTECIMIENTO URGENTE'
-        WHEN prod.StockActual <= prod.StockMinimo * 1.5 THEN '⚠️ STOCK BAJO'
-        ELSE '✅ SALUDABLE'
+        WHEN prod.StockActual <= prod.StockMinimo THEN 'REABASTECIMIENTO URGENTE'
+        WHEN prod.StockActual <= prod.StockMinimo * 1.5 THEN 'STOCK BAJO'
+        ELSE 'SALUDABLE'
     END AS Semaforo_Logistico
 FROM Inventario.Proveedores prov
 JOIN Inventario.Productos prod ON prov.ProveedorID = prod.ProveedorID;
