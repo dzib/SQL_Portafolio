@@ -196,7 +196,7 @@ A lo largo del portafolio, se han documentado y resuelto desafíos críticos de 
 
 Este portafolio está diseñado para ser auditable y reproducible:
 
-1. **Exploración por Proyectos:** Cada carpeta (`P1` a `P4`) contiene una secuencia numerada (01-05) que representa el ciclo de vida del pipeline.
+1. **Exploración por Proyectos:** Cada carpeta (`P1` a `P4`) contiene una secuencia numerada (01-05 o subcarpeta Scripts/) que representa el ciclo de vida del pipeline.
 2. **Documentación de Proyecto:** Cada subcarpeta incluye su propio `README.md` detallando métricas de performance específicas y evidencias visuales (`/img`).
 3. **Requisitos de Entorno:**
     - SQL Server 2025 | SSMS 22.
