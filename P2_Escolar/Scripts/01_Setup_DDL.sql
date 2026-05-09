@@ -19,6 +19,8 @@ DESCRIPCIÓN:
 USE master;
 GO
 
+SET NOCOUNT ON; -- Suuprir el mensaje: "(1 filas afectadas)".
+
 IF EXISTS (SELECT * FROM sys.databases WHERE name = 'P2_EscolarDB')
 BEGIN
     ALTER DATABASE P2_EscolarDB SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
@@ -122,7 +124,7 @@ BEGIN TRY
         AlumnoID INT CONSTRAINT FK_Ins_Alu FOREIGN KEY REFERENCES Catalogos.Alumnos(AlumnoID),
         MateriaID INT CONSTRAINT FK_Ins_Mat FOREIGN KEY REFERENCES Operaciones.Materias(MateriaID),
         CicloEscolar NVARCHAR(20),
-        NotaFinal DECIMAL(4,2) CONSTRAINT CHK_NotaRange CHECK (NotaFinal BETWEEN 0 AND 100)
+        NotaFinal DECIMAL(5,2) CONSTRAINT CHK_NotaRange CHECK (NotaFinal BETWEEN 0 AND 100)
     );
 
     CREATE TABLE Operaciones.Asistencias (
@@ -137,7 +139,7 @@ BEGIN TRY
         CalificacionID INT PRIMARY KEY IDENTITY(1,1),
         AlumnoID INT CONSTRAINT FK_Cal_Alumnos FOREIGN KEY REFERENCES Catalogos.Alumnos(AlumnoID),
         CursoID INT CONSTRAINT FK_Cal_Cursos FOREIGN KEY REFERENCES Catalogos.Cursos(CursoID),
-        Nota DECIMAL(4,2) CONSTRAINT CK_Nota CHECK (Nota BETWEEN 0 AND 100),
+        Nota DECIMAL(5,2) CONSTRAINT CK_Nota CHECK (Nota BETWEEN 0 AND 100),
         FechaEvaluacion DATETIME2 DEFAULT SYSUTCDATETIME()
     );
 
