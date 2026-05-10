@@ -79,9 +79,9 @@ BEGIN TRY
         INSERT INTO Catalogos.Cursos
             (Nombre, Creditos)
         VALUES
-            ('Desarrollo Humano', 8),
+            ('Desarrollo Humano', 5),
             ('Programación', 6),
-            ('Análisis de Algoritmos', 7),
+            ('Análisis de Algoritmos', 6),
             ('Ética Profesional', 4);
         PRINT '✅ Catálogo: Cursos insertado.';
     END

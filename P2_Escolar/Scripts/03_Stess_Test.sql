@@ -17,22 +17,29 @@ GO
 -- -- ---------------------------------------------------------------------------------------------------------------------------------------------------
 -- -- 1. VARIABLES DE BUCLE Y MÉTRICAS PARA CONTROL.
 -- -- ---------------------------------------------------------------------------------------------------------------------------------------------------
-SET NOCOUNT ON;                   -- Para reducir tiempo se suprime el mensaje de "(1 filas afectadas)".
+SET NOCOUNT ON;                     -- Para reducir tiempo se suprime el mensaje de "(1 filas afectadas)".
+SET XACT_ABORT ON;                  -- Para asegura que errores aborten la transacción.
+
 BEGIN TRY
     BEGIN TRANSACTION;
     
     -- Parámetros de stress
     DECLARE @StartTime DATETIME2 = SYSUTCDATETIME();    
     DECLARE @NProf INT = 10000;    -- Volumen de profesores a agregar en stress.
-    DECLARE @NCursos INT = 200000;  -- Volumen de cursos a agregar.
-    DECLARE @NMat INT = 200000;    -- Volumen de materias a agregar.
-    DECLARE @NAlu INT = 10000000;   -- Volumen de alumnos a agregar para stress.
-    DECLARE @MaxAlumnos INT = (SELECT ISNULL(UltimoID,0) FROM Control.Checkpoints WHERE Entidad = 'Alumnos') + @NAlu;
     DECLARE @MaxProfesorNuevo INT = ISNULL((SELECT MAX(ProfesorID) FROM Catalogos.Profesores), 1);
-    DECLARE @MaxNotas INT = 500000000;
-
+    DECLARE @NAluRun INT = 10000000;   -- Volumen de alumnos a agregar para stress.
+    DECLARE @MaxAlumnos INT = (SELECT ISNULL(UltimoID,0) FROM Control.Checkpoints WHERE Entidad = 'Alumnos') + @NAluRun;
+    DECLARE @NombreBase NVARCHAR(50) = ISNULL(CHOOSE(FLOOR(RAND()*3)+1,'Estudiante', 'Alumno', 'Candidato'),'User');
     DECLARE @MinAsis INT = 2;
     DECLARE @MaxAsis INT = 6;
+    DECLARE @MinParciales INT = 2, @MaxParciales INT = 3;
+    DECLARE @NCursos INT = 1000;  -- Volumen de cursos a agregar.
+    DECLARE @NMat INT = 200;    -- Volumen de materias a agregar.
+
+
+    DECLARE @MaxNotas INT = 5000000;
+
+
 
 -- -- ---------------------------------------------------------------------------------------------------------------------------------------------------
 -- -- > 2. PRIMERA LECTURA: De checkpoints actuales para control de FK (defensivo: 0).
@@ -43,7 +50,6 @@ BEGIN TRY
     DECLARE @UltMat INT = ISNULL((SELECT UltimoID FROM Control.Checkpoints WHERE Entidad = 'Materias'),0);
     DECLARE @UltAlu INT = ISNULL((SELECT UltimoID FROM Control.Checkpoints WHERE Entidad = 'Alumnos'),0);
     DECLARE @MaxDepto INT = ISNULL((SELECT MAX(DeptoID) FROM Catalogos.Departamentos), 1);
-    DECLARE @NombreBase NVARCHAR(50) = ISNULL(CHOOSE(FLOOR(RAND()*3)+1,'Estudiante', 'Alumno', 'Candidato'),'User');
 
     PRINT '--------------------------------------------------------------------------------------------------';
     PRINT '🚀 Iniciando Stress Test en P2_EscolarDB...' + CAST(SYSUTCDATETIME() AS VARCHAR);
@@ -53,7 +59,7 @@ BEGIN TRY
 --- -- 3. POBLADO DE DEPARTAMENTOS Y PROFESORES.
 --- -- ---------------------------------------------------------------------------------------------------------------------------------------------------
     PRINT '--------------------------------------------------------------------------------------------------';
-    PRINT '🏢 Diversificando con ' + FORMAT(@MaxDepto, 'N0') + ' Departamentos y '+' con ' + FORMAT(@MaxProfesorNuevo, 'N0') + ' Profesores Nuevos...';
+    PRINT '🏢 Diversificando con Departamentos y con Profesores Nuevos...';
     PRINT '--------------------------------------------------------------------------------------------------';
 
         INSERT INTO Catalogos.Departamentos
@@ -64,31 +70,70 @@ BEGIN TRY
         ('Departamento de Artes y Diseño', 450000),
         ('Departamento de Ciencias de la Salud Pública', 150000);
 
+        ;WITH nums AS (
+            SELECT TOP (@NProf) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS rn
+            FROM sys.all_columns
+        )
         INSERT INTO Catalogos.Profesores (Nombre, Email, DeptoID)
-        SELECT TOP (@NProf)
-            'Prof_N' + CAST(@UltProf + ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS VARCHAR(10)),
-            'Prof' + CAST(@UltProf + ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS VARCHAR(10)) + '@escolar.edu',
-            (ABS(CHECKSUM(NEWID())) % @MaxDepto) + 1
-        FROM sys.all_columns a
-        ORDER BY NEWID();
+        SELECT N.Nombre, N.Email, N.DeptoID
+        FROM ( --Insertar solo si no existe el email (Idempotente).
+            SELECT
+                'Prof_Nf_' + CAST(@UltProf + rn AS VARCHAR(10)) AS Nombre,
+                'prof' + CAST(@UltProf + rn AS VARCHAR(10)) + '@escolar.edu' AS Email,
+                (ABS(CHECKSUM(NEWID())) % @MaxDepto) + 1 AS DeptoID
+            FROM nums
+        ) N
+        WHERE NOT EXISTS (SELECT 1 FROM Catalogos.Profesores P WHERE P.Email = N.Email);
+
 
 --- -- ---------------------------------------------------------------------------------------------------------------------------------------------------
 --- -- 4. DIVERSIFICACIÓN DE CURSOS Y MATERIAS (Asignando ProfesorID entre existentes)
 --- -- ---------------------------------------------------------------------------------------------------------------------------------------------------
+        ;WITH curs AS (
+            SELECT TOP (@NCursos) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS rnc
+            FROM sys.all_columns
+        )
         INSERT INTO Catalogos.Cursos (Nombre, Creditos)
-        SELECT TOP (@NCursos)
-            'NCurso_' + CAST(@UltCurso + ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS VARCHAR(10)),
-            (ABS(CHECKSUM(NEWID())) % 4) + 3
-        FROM sys.all_columns a
-        ORDER BY NEWID();
+        SELECT Nc.Nombre, Nc.Creditos
+        FROM (
+            SELECT
+                'NCurso_' + CAST(@UltCurso + rnc AS VARCHAR(10)) AS Nombre,
+                (ABS(CHECKSUM(NEWID())) % 4) + 3 AS Creditos
+            FROM curs
+        ) Nc
+        WHERE NOT EXISTS (SELECT 1 FROM Catalogos.Cursos C WHERE C.Nombre = Nc.Nombre);
 
+        DECLARE @InsertedCurs INT = (SELECT COUNT(*) FROM Catalogos.Cursos);
+        IF @InsertedCurs = 0
+        BEGIN
+            RAISERROR('No se insertaron Cursos en Catalogos.Cursos. Abortar Insersion',16,1);
+            RETURN;
+        END
+        PRINT 'Cursos insertados: ' + CAST(@InsertedCurs AS VARCHAR(12));
+
+
+        ;WITH mat AS (
+            SELECT TOP (@NMat) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS rnm
+            FROM sys.all_columns
+        )
         INSERT INTO Operaciones.Materias (Nombre, Creditos, ProfesorID)
-        SELECT TOP (@NMat)
-            'StressMateria_' + CAST(@UltMat + ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS VARCHAR(10)),
-            (ABS(CHECKSUM(NEWID())) % 4) + 3,
-            (ABS(CHECKSUM(NEWID())) % @MaxProfesorNuevo) + 1
-        FROM sys.all_columns a
-        ORDER BY NEWID();
+        SELECT Nm.Nombre, Nm.Creditos, Nm.ProfesorID
+        FROM (
+            SELECT
+                'NMateria_' + CAST(@UltMat + rnm AS VARCHAR(10)) AS Nombre,
+                (ABS(CHECKSUM(NEWID())) % 4) + 3 AS Creditos,
+                (ABS(CHECKSUM(NEWID())) % @MaxProfesorNuevo) + 1 AS ProfesorID
+            FROM mat
+        ) Nm
+        WHERE NOT EXISTS (SELECT 1 FROM Operaciones.Materias M WHERE M.Nombre = Nm.Nombre);
+
+        DECLARE @InsertedMat INT = (SELECT COUNT(*) FROM Operaciones.Materias);
+        IF @InsertedMat = 0
+        BEGIN
+            RAISERROR('No se insertaron Materias en Operaciones.M. Abortar Insersion',16,1);
+            RETURN;
+        END
+        PRINT 'Materias insertadas: ' + CAST(@InsertedMat AS VARCHAR(12));
 
 --- -- ---------------------------------------------------------------------------------------------------------------------------------------------------
 --- -- 5. CARGA MASIVA DE ALUMNOS.
@@ -97,7 +142,7 @@ BEGIN TRY
         PRINT '👥 Generando ' + FORMAT(@MaxAlumnos, 'N0')+ ' alumnos con blindaje de nulos...';
         PRINT '--------------------------------------------------------------------------------------------------';
 
-        -- PAso 1) Materializar Catalogos.Carreras en tabla temporal (blindaje lógico).
+        -- Paso 1) Materializar Catalogos.Carreras en tabla temporal (blindaje lógico).
         IF OBJECT_ID('tempdb..#CarrList') IS NOT NULL DROP TABLE #CarrList;
 
         SELECT CarreraID, DeptoID,
@@ -112,17 +157,17 @@ BEGIN TRY
             RETURN;
         END
 
-        -- 2) Generador de filas rápido y mapeo por índice (Sin aplicar un ORDER BY NEWID() por carreras ya que es costoso en tablas grandes.)
+        -- Paso 2) Generador de filas rápido y mapeo por índice (Sin aplicar un ORDER BY NEWID() por carreras ya que es costoso en tablas grandes.)
         ;WITH RandRows AS (
-            SELECT TOP (@NAlu)
-                ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS rn
+            SELECT TOP (@NAluRun)
+                ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS rna
             FROM sys.all_columns
         )
         INSERT INTO Catalogos.Alumnos (Nombre, Email, FechaNacimiento, MetaData_ETL, CarreraID, DeptoID)
         SELECT
             -- Nombre y email.
-            @NombreBase + '_ID_' + CAST(@UltAlu + R.rn AS VARCHAR(10)) AS Nombre,
-            LOWER(@NombreBase) + CAST(@UltAlu + R.rn AS VARCHAR(10)) + '@escolar.edu' AS Email,
+            @NombreBase + '_ID_' + CAST(@UltAlu + R.rna AS VARCHAR(10)) AS Nombre,
+            LOWER(@NombreBase) + CAST(@UltAlu + R.rna AS VARCHAR(10)) + '@escolar.edu' AS Email,
             -- FechaNacimiento aleatoria.
             DATEADD(DAY, -ABS(CHECKSUM(NEWID())) % 36500, GETDATE()) AS FechaNacimiento,
             -- MetaData_ETL.
@@ -135,7 +180,7 @@ BEGIN TRY
             C.DeptoID
         FROM RandRows R
         JOIN #CarrList C
-            ON C.CarrRow = ((R.rn - 1) % @CarrCount) + 1;
+            ON C.CarrRow = ((R.rna - 1) % @CarrCount) + 1;
         -- Aplicando la técnica modular evita ordenar aleatoriamente la tabla de carreras cada vez y es mucho más escalable.
 
 ---- -- ------------------------------------------------------------------------------------------------------------------------------------------------
@@ -168,6 +213,7 @@ BEGIN TRY
 --- -- ---------------------------------------------------------------------------------------------------------------------------------------------------
 --- -- 7. INSCRIPCIONES MASIVAS (Se asigna MateriaID y CursoID (CursoID elegido aleatoriamente desde Catalogos.Cursos).
 --- -- ---------------------------------------------------------------------------------------------------------------------------------------------------
+
         -- Paso 1.1) Usamos una tabla temporal para capturar inscripciones creadas en este run.
         IF OBJECT_ID('tempdb..#NewIns') IS NOT NULL DROP TABLE #NewIns;
         CREATE TABLE #NewIns (
@@ -203,107 +249,84 @@ BEGIN TRY
             RAISERROR('No hay materias en Operaciones.Materias. Abortando.',16,1);
             RETURN;
         END
+        PRINT 'Cursos materializados: ' + CAST(@CursoCount AS VARCHAR(10)) + ' | Materias: ' + CAST(@MateriaCount AS VARCHAR(10));
 
-        -- Paso 2) Insert masivo de Inscripciones con OUTPUT hacia #NewIns.
+        -- Paso 2) CTE con extracción robusta del estatus desde MetaData_ETL (seguro frente a notas extra).
         ;WITH AluEstatus AS (
-            SELECT TOP (@NAlu) A.AlumnoID, A.MetaData_ETL,
-                ISNULL(A.EstatusAcademico,
-                        UPPER(LEFT(TRIM(SUBSTRING(A.MetaData_ETL, CHARINDEX('|',A.MetaData_ETL)+1,20)),1))
-                        + LOWER(SUBSTRING(TRIM(SUBSTRING(A.MetaData_ETL, CHARINDEX('|',A.MetaData_ETL)+1,20)),2,50))
-                ) AS EstatusAcademico
-            FROM Catalogos.Alumnos A
-            ORDER BY NEWID()  -- si quieres muestrear alumnos aleatoriamente; quítalo si ya tienes la lista
+        SELECT TOP (@NAluRun) A.AlumnoID, A.MetaData_ETL,
+            -- Estatus normalizado (versión robusta).
+            CASE
+                WHEN UPPER(LTRIM(RTRIM(SUBSTRING(A.MetaData_ETL, CHARINDEX('|',A.MetaData_ETL)+1,
+                    CASE WHEN CHARINDEX('|',A.MetaData_ETL, CHARINDEX('|',A.MetaData_ETL)+1)=0 THEN LEN(A.MetaData_ETL) 
+                        ELSE CHARINDEX('|',A.MetaData_ETL, CHARINDEX('|',A.MetaData_ETL)+1) - CHARINDEX('|',A.MetaData_ETL) - 1 END
+                )))) LIKE '%REGUL%' THEN 'REGULAR'
+                WHEN UPPER(LTRIM(RTRIM(SUBSTRING(A.MetaData_ETL, CHARINDEX('|',A.MetaData_ETL)+1,
+                    CASE WHEN CHARINDEX('|',A.MetaData_ETL, CHARINDEX('|',A.MetaData_ETL)+1)=0 THEN LEN(A.MetaData_ETL) 
+                        ELSE CHARINDEX('|',A.MetaData_ETL, CHARINDEX('|',A.MetaData_ETL)+1) - CHARINDEX('|',A.MetaData_ETL) - 1 END
+                )))) LIKE '%IRREG%' THEN 'IRREGULAR'
+                WHEN UPPER(LTRIM(RTRIM(SUBSTRING(A.MetaData_ETL, CHARINDEX('|',A.MetaData_ETL)+1,
+                    CASE WHEN CHARINDEX('|',A.MetaData_ETL, CHARINDEX('|',A.MetaData_ETL)+1)=0 THEN LEN(A.MetaData_ETL) 
+                        ELSE CHARINDEX('|',A.MetaData_ETL, CHARINDEX('|',A.MetaData_ETL)+1) - CHARINDEX('|',A.MetaData_ETL) - 1 END
+                )))) LIKE '%CONDIC%' THEN 'CONDICIONAL'
+                ELSE NULL
+            END AS EstatusAcademico
+        FROM Catalogos.Alumnos A
+        ORDER BY NEWID()
         )
         INSERT INTO Operaciones.Inscripciones (AlumnoID, MateriaID, CursoID, CicloEscolar, NotaFinal)
         OUTPUT inserted.InscripcionID, inserted.AlumnoID, inserted.MateriaID, inserted.CursoID, inserted.CicloEscolar, inserted.NotaFinal
         INTO #NewIns (InscripcionID, AlumnoID, MateriaID, CursoID, CicloEscolar, NotaFinal)
         SELECT A.AlumnoID,
             M.MateriaID,
-            -- Asignar CursoID por mapeo modular desde #Cursos (evita ORDER BY NEWID() por cada fila).
             C.CursoID,
-            -- CicloEscolar derivado desde MetaData_ETL (primer token fecha) o fallback a año actual-1/2.
             CAST(YEAR(TRY_CAST(LEFT(A.MetaData_ETL,10) AS DATE)) AS VARCHAR(4)) + '-' +
                 CASE WHEN MONTH(TRY_CAST(LEFT(A.MetaData_ETL,10) AS DATE)) <= 6 THEN '1' ELSE '2' END,
             NULL
         FROM AluEstatus A
         CROSS APPLY (
-            -- Calcular cuántas materias asignar según estatus.
-            SELECT CASE
-                WHEN A.EstatusAcademico = 'REGULAR' THEN (ABS(CHECKSUM(NEWID())) % 2) + 6  -- 6-7
-                WHEN A.EstatusAcademico = 'IRREGULAR' THEN (ABS(CHECKSUM(NEWID())) % 3) + 3 -- 3-5
-                WHEN A.EstatusAcademico = 'CONDICIONAL' THEN (ABS(CHECKSUM(NEWID())) % 3) + 4 -- 4-6
-                ELSE 0
-            END AS Cantidad
-        ) Cnt
-        CROSS APPLY (
-            -- Seleccionar N materias aleatorias por alumno; para un volumen de Materias pequeño si es grande es mejor evitar NEWID(), con otra alternativa.
-            SELECT TOP (Cnt.Cantidad) M.MateriaID
-            FROM Operaciones.Materias M
-            ORDER BY NEWID()
-        ) M
-        -- Mapear Curso por índice: usamos ROW_NUMBER() implícito a partir de una fila generada.
-        CROSS APPLY (
-            SELECT ((ABS(CHECKSUM(NEWID())) % @CursoCount) + 1) AS CursoRowRandom
-        ) CR
-        JOIN #Cursos C ON C.CursoRow = CR.CursoRowRandom
-        WHERE Cnt.Cantidad > 0;
-
-------- -- ---------------------------------------------------------------------------------------------------------------------------------------------------
-------- -- 8. CARGA ASISTENCIAS BASADO EN CICLO ESCOLAR (Fechas dentro del semestre).
-------- -- ---------------------------------------------------------------------------------------------------------------------------------------------------
-        -- Se genera asistencias por InscripcionID dentro del semestre (2-4 asistencias por inscripción).
-        ;WITH Sem AS (
-            SELECT N.InscripcionID, N.AlumnoID, N.CursoID, N.CicloEscolar,
-                CASE WHEN RIGHT(N.CicloEscolar,2) = '-1' THEN DATEFROMPARTS(CAST(LEFT(N.CicloEscolar,4) AS INT),1,1)
-                        ELSE DATEFROMPARTS(CAST(LEFT(N.CicloEscolar,4) AS INT),7,1) END AS SemInicio,
-                CASE WHEN RIGHT(N.CicloEscolar,2) = '-1' THEN DATEFROMPARTS(CAST(LEFT(N.CicloEscolar,4) AS INT),6,30)
-                        ELSE DATEFROMPARTS(CAST(LEFT(N.CicloEscolar,4) AS INT),12,31) END AS SemFin,
-                ISNULL(N.NotaFinal, NULL) AS NotaFinal
-            FROM #NewIns N
-        )
-        INSERT INTO Operaciones.Asistencias (InscripcionID, AlumnoID, CursoID, FechaAsistencia, Presente)
-        SELECT S.InscripcionID, S.AlumnoID, S.CursoID,
-            CAST(DATEADD(DAY, ABS(CHECKSUM(NEWID())) % (DATEDIFF(DAY, S.SemInicio, S.SemFin) + 1), S.SemInicio) AS DATE),
-            CASE WHEN (ABS(CHECKSUM(NEWID())) % 10) < 8 THEN 1 ELSE 0 END
-        FROM Sem S
-        CROSS APPLY (
-            SELECT TOP ((ABS(CHECKSUM(NEWID())) % 3) + 2) 1 AS x FROM sys.all_columns
-        ) r
-        LEFT JOIN Operaciones.Asistencias A
-            ON A.InscripcionID = S.InscripcionID
-            AND A.FechaAsistencia = CAST(DATEADD(DAY, ABS(CHECKSUM(NEWID())) % (DATEDIFF(DAY, S.SemInicio, S.SemFin) + 1), S.SemInicio) AS DATE)
-        WHERE A.AsistenciaID IS NULL;
-
-------- -- ---------------------------------------------------------------------------------------------------------------------------------------------------
-------- -- 9. CARGA DE CALIFICACIONES PARCIALES (CROSS-JOIN DE ALTO RENDIMIENTO) respetando CHK_Parcial (1..3).
-------- -- Variante: 2-3 parciales aleatorios por inscripción.
-        PRINT '📊 Inyectando ' + FORMAT(@MaxNotas, 'N0') + ' calificaciones de forma atómica...';
-------- -- ---------------------------------------------------------------------------------------------------------------------------------------------------
-        -- Insertar parciales (Operaciones.Calificaciones) 
-        ;WITH InsList AS (
-            SELECT I.InscripcionID, I.AlumnoID, I.CursoID
-            FROM Operaciones.Inscripciones I
-        )
-        INSERT INTO Operaciones.Calificaciones (InscripcionID, ParcialNumero, AlumnoID, CursoID, Nota, FechaAplicacion)
-        SELECT I.InscripcionID,
-                P.ParcialNum,
-                I.AlumnoID,
-                I.CursoID,
-                CAST((ABS(CHECKSUM(NEWID())) % 101) AS DECIMAL(5,2)),
-                SYSUTCDATETIME()
-        FROM InsList I
-        CROSS APPLY (
-            --Se generar 2-3 parciales aleatorios por inscripción.
-            SELECT TOP (CASE (ABS(CHECKSUM(NEWID())) % 2) + 2 WHEN 2 THEN 2 WHEN 3 THEN 3 END)
-                ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS ParcialNum
+            -- generar N filas por alumno (expansión); aquí usamos sys.all_columns para repetir
+            SELECT TOP ((CASE WHEN A.EstatusAcademico='REGULAR' THEN 6 WHEN A.EstatusAcademico='IRREGULAR' THEN 3 ELSE 4 END)) 1 AS dummy
             FROM sys.all_columns
-        ) P
+        ) rep
+        -- Elegir materia por índice modular (evita ORDER BY NEWID() en la tabla completa)-- Se asume #Cursos y #Materias ya materializadas con CursoRow y MateriaRow.
+        CROSS APPLY (
+            SELECT MateriaID
+            FROM #Materias
+            WHERE MateriaRow = ((ABS(CHECKSUM(CONCAT(A.AlumnoID,rep.dummy,NEWID()))) % @MateriaCount) + 1)
+        ) M
+        -- Elegir curso por índice modular (JOIN directo, CursoRow es único) ---Solo inserta un curso 
+        JOIN #Cursos C ON C.CursoRow = ((ABS(CHECKSUM(CONCAT(A.AlumnoID,NEWID()))) % @CursoCount) + 1)
+        WHERE 1=1;
+
+        DECLARE @InsertedIns INT = (SELECT COUNT(*) FROM #NewIns);
+        PRINT 'Inscripciones creadas en este run: ' + CAST(@InsertedIns AS VARCHAR(12));
+
+        IF @InsertedIns = 0
+            BEGIN
+            RAISERROR('No se generaron inscripciones en este run. Revisar AluEstatus/Cantidad.',16,1);
+        END
+
+------- -- ---------------------------------------------------------------------------------------------------------------------------------------------------
+------- -- 8. CARGA DE CALIFICACIONES PARCIALES (CROSS-JOIN DE ALTO RENDIMIENTO) respetando CHK_Parcial (1..3).
+------- -- Variante: 1-3 parciales aleatorios por inscripción.
+------- -- ---------------------------------------------------------------------------------------------------------------------------------------------------
+        INSERT INTO Operaciones.Calificaciones (InscripcionID, ParcialNumero, AlumnoID, CursoID, Nota, FechaAplicacion)
+        SELECT N.InscripcionID,
+            P.ParcialNum,
+            N.AlumnoID,
+            N.CursoID,
+            CAST((ABS(CHECKSUM(NEWID())) % 101) AS DECIMAL(5,2)),
+            SYSUTCDATETIME()
+        FROM #NewIns N
+        CROSS JOIN (VALUES (1),(2),(3)) AS P(ParcialNum)
         LEFT JOIN Operaciones.Calificaciones C
-            ON C.InscripcionID = I.InscripcionID AND C.ParcialNumero = P.ParcialNum
-        WHERE C.InscripcionID IS NULL;
+            ON C.InscripcionID = N.InscripcionID AND C.ParcialNumero = P.ParcialNum
+        WHERE C.CalificacionID IS NULL;
+
+        PRINT 'Parciales insertados para inscripciones nuevas.';
 
 ------ -- ---------------------------------------------------------------------------------------------------------------------------------------------------
------- -- 10. Ajuste: Actualizamos la NotaFinal en Inscripciones como promedio simple de parciales.
+------ -- 9. AJUSTE: Actualizamos la NotaFinal en Inscripciones como promedio simple de parciales.
 ------ -- ---------------------------------------------------------------------------------------------------------------------------------------------------
         UPDATE I
         SET NotaFinal = C.Promedio
@@ -313,6 +336,34 @@ BEGIN TRY
             FROM Operaciones.Calificaciones
             GROUP BY InscripcionID
         ) C ON I.InscripcionID = C.InscripcionID;
+
+------- -- ---------------------------------------------------------------------------------------------------------------------------------------------------
+------- -- 10. CARGA ASISTENCIAS BASADO EN CICLO ESCOLAR (Fechas dentro del semestre).
+------- -- ---------------------------------------------------------------------------------------------------------------------------------------------------
+        -- Se genera asistencias por InscripcionID dentro del semestre (2-4 asistencias por inscripción).
+        ;WITH Sem AS (
+            SELECT N.InscripcionID, N.AlumnoID, N.CursoID, N.CicloEscolar,
+                CASE WHEN RIGHT(N.CicloEscolar,2) = '-1' THEN DATEFROMPARTS(CAST(LEFT(N.CicloEscolar,4) AS INT),1,1)
+                        ELSE DATEFROMPARTS(CAST(LEFT(N.CicloEscolar,4) AS INT),7,1) END AS SemInicio,
+                CASE WHEN RIGHT(N.CicloEscolar,2) = '-1' THEN DATEFROMPARTS(CAST(LEFT(N.CicloEscolar,4) AS INT),6,30)
+                        ELSE DATEFROMPARTS(CAST(LEFT(N.CicloEscolar,4) AS INT),12,31) END AS SemFin
+            FROM #NewIns N
+        )
+        INSERT INTO Operaciones.Asistencias (InscripcionID, AlumnoID, CursoID, FechaAsistencia, Presente)
+        SELECT S.InscripcionID, S.AlumnoID, S.CursoID,
+            CAST(DATEADD(DAY, ABS(CHECKSUM(NEWID())) % (DATEDIFF(DAY, S.SemInicio, S.SemFin) + 1), S.SemInicio) AS DATE),
+            CASE WHEN (ABS(CHECKSUM(NEWID())) % 10) < 8 THEN 1 ELSE 0 END
+        FROM Sem S
+        CROSS APPLY (SELECT TOP ((ABS(CHECKSUM(NEWID())) % 3) + 2) 1 AS x FROM sys.all_columns) r
+        LEFT JOIN Operaciones.Asistencias A
+            ON A.InscripcionID = S.InscripcionID
+            AND A.FechaAsistencia = CAST(DATEADD(DAY, ABS(CHECKSUM(NEWID())) % (DATEDIFF(DAY, S.SemInicio, S.SemFin) + 1), S.SemInicio) AS DATE)
+        WHERE A.AsistenciaID IS NULL;
+
+        PRINT 'Asistencias generadas para inscripciones nuevas.';
+        PRINT '--- Bloque Inscripciones/Parciales/Asistencias finalizado exitosamente.---';
+
+
 
 ----- -----------------------------------------------------------------------------------------------------------------------------------------------------
 ----- -- > 11. ULTIMA ACTUALIZACIÓN: Se cargan los checkpoints finales del proceso.
@@ -373,7 +424,7 @@ BEGIN TRY
 
         COMMIT;
 ------- --------------------------------------------------------------------------------------------------------------------------------------------------------
-------- -- 12. MÉTRICAS FINALES
+------- -- 12. MÉTRICAS FINALES.
 ------- ---------------------------------------------------------------------------------------------------------------------------------------------------------
         DECLARE @EndTime DATETIME2 = SYSUTCDATETIME();
         PRINT '';
@@ -383,19 +434,21 @@ BEGIN TRY
         PRINT '✅ Alumnos Procesados:   ' + FORMAT(@MaxAlumnos, 'N0');
         PRINT '📝 Departamentos Inyectados: ' + FORMAT(@MaxDepto, 'N0');
         PRINT '📝 Profesores Inyectados: ' + FORMAT(@MaxProfesorNuevo, 'N0');
-        PRINT '📝 Cursos Inyectados:    ' + FORMAT(@NCursos, 'N0');
-        PRINT '📝 Materias Inyectadas:  ' + FORMAT(@NMat, 'N0');
-        PRINT '📝 Notas Inyectadas:     ' + FORMAT(@MaxNotas, 'N0');
+        PRINT '📝 Inscripciones Inyectadas: ' + FORMAT(@InsertedIns, 'N0');
+        PRINT '📝 Cursos Inyectados:    ' + FORMAT(@InsertedCurs, 'N0');
+        PRINT '📝 Materias Inyectadas:     ' + FORMAT(@InsertedMat, 'N0');
         PRINT '⏱️ Tiempo de Respuesta:  ' + FORMAT(DATEDIFF(MILLISECOND, @StartTime, SYSUTCDATETIME()), 'N0') + ' ms';
         PRINT '⏱️ Tiempo de Ejecución: ' + FORMAT(DATEDIFF(MILLISECOND, @StartTime, @EndTime), 'N0') + ' ms';
         PRINT '📅 Finalizado el:        ' + CAST(SYSDATETIME() AS VARCHAR);
         PRINT '=====================================================';
         PRINT '';
 
-        END TRY
-        BEGIN CATCH
-            IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF XACT_STATE() <> 0
+            ROLLBACK;
 
+        DECLARE @ErrMsg NVARCHAR(4000)=ERROR_MESSAGE(), @ErrLine INT = ERROR_LINE();
         PRINT '';
         PRINT '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!';
         PRINT '=====================================================';
@@ -403,8 +456,9 @@ BEGIN TRY
         PRINT '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!';
         PRINT '📍 Línea del Error: ' + CAST(ERROR_LINE() AS VARCHAR); -- Línea donde ocurrió el error.
         PRINT '🔢 Código de Error:   ' + CAST(ERROR_NUMBER() AS VARCHAR); -- Código de error específico.
-        PRINT '📄 ERROR CRÍTICO EN PIPELINE: ' + ERROR_MESSAGE();
-        PRINT '⚙️  Procedimiento:     ' + ISNULL(ERROR_PROCEDURE(), 'Script Directo');
+        PRINT '⚙️ Procedimiento:     ' + ISNULL(ERROR_PROCEDURE(), 'Script Directo'); -- Procedimiento donde ocurrió el error.
+        PRINT '    ERROR: ' + ISNULL(@ErrMsg,'(sin mensaje)') + ' en linea ' + CAST(@ErrLine AS VARCHAR(10));
+        THROW; -- Re-lanza para que el caller vea el erro
         PRINT '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!';
 END CATCH
 GO

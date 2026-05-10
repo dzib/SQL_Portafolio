@@ -58,7 +58,7 @@ DECLARE @StartTime DATETIME2 = SYSUTCDATETIME(); -- Para métricas de tiempo de 
 BEGIN TRY
     CREATE TABLE Catalogos.Departamentos (
         DeptoID INT PRIMARY KEY IDENTITY(1,1),
-        Nombre NVARCHAR(100) NOT NULL,
+        Nombre NVARCHAR(150) NOT NULL,
         PresupuestoAnual DECIMAL(15,2) CONSTRAINT CHK_PresupuestoPos CHECK (PresupuestoAnual >= 0),
         CreatedAt DATETIME2 DEFAULT SYSUTCDATETIME()
     );
@@ -73,7 +73,7 @@ BEGIN TRY
 
     CREATE TABLE Catalogos.Carreras (
         CarreraID INT IDENTITY(1,1) PRIMARY KEY,
-        NombreCarrera VARCHAR(100) NOT NULL,
+        NombreCarrera VARCHAR(150) NOT NULL,
         DeptoID INT CONSTRAINT FK_Carreras_Deptos FOREIGN KEY REFERENCES Catalogos.Departamentos(DeptoID)
     ); -- Vinculamos la Carrera al Departamento (Facultad).
 
@@ -95,7 +95,7 @@ BEGIN TRY
 
     CREATE TABLE Catalogos.Cursos (
         CursoID INT PRIMARY KEY IDENTITY(1,1),
-        Nombre NVARCHAR(100) NOT NULL,
+        Nombre NVARCHAR(150) NOT NULL,
         Creditos INT CONSTRAINT CK_Creditos CHECK (Creditos BETWEEN 1 AND 12),
     );
 
@@ -114,7 +114,7 @@ BEGIN TRY
 --- -- ---------------------------------------------------------------------------------------------------------
     CREATE TABLE Operaciones.Materias (
         MateriaID INT PRIMARY KEY IDENTITY(1,1),
-        Nombre NVARCHAR(100) NOT NULL,
+        Nombre NVARCHAR(150) NOT NULL,
         Creditos INT CONSTRAINT CHK_Creditos CHECK (Creditos >= 0),
         ProfesorID INT CONSTRAINT FK_Mat_Prof FOREIGN KEY REFERENCES Catalogos.Profesores(ProfesorID)
     );
