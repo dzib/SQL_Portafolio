@@ -68,7 +68,7 @@ BEGIN TRY
     CREATE TABLE Catalogos.Profesores (
         ProfesorID INT PRIMARY KEY IDENTITY(1,1),
         Nombre NVARCHAR(150) NOT NULL,
-        Email NVARCHAR(100) CONSTRAINT UQ_Prof_Email UNIQUE,
+        Email NVARCHAR(150) CONSTRAINT UQ_Prof_Email UNIQUE,
         DeptoID INT CONSTRAINT FK_Prof_Depto FOREIGN KEY REFERENCES Catalogos.Departamentos(DeptoID),
         IsActive BIT DEFAULT 1
     );
@@ -84,7 +84,7 @@ BEGIN TRY
         Nombre NVARCHAR(150) NOT NULL,
         CarreraID INT CONSTRAINT FK_Alumnos_Carreras FOREIGN KEY REFERENCES Catalogos.Carreras(CarreraID),
         DeptoID INT CONSTRAINT FK_Alumnos_Deptos FOREIGN KEY REFERENCES Catalogos.Departamentos(DeptoID),
-        Email NVARCHAR(100) CONSTRAINT UQ_Alu_Email UNIQUE,
+        Email NVARCHAR(150) CONSTRAINT UQ_Alu_Email UNIQUE,
         FechaNacimiento DATE,
         -- Columna Legacy para la Fase 4: FechaIngreso | Estatus | Promedio".
         MetaData_ETL NVARCHAR(MAX),

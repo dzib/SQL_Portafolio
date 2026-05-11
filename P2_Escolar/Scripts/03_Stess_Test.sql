@@ -25,14 +25,13 @@ BEGIN TRY
     
     -- Parámetros de stress
     DECLARE @StartTime DATETIME2 = SYSUTCDATETIME();    
-    DECLARE @NProf INT = 1000;    -- Volumen de profesores a agregar en stress.
-    DECLARE @NAluRun INT = 2000;   -- Volumen de alumnos muestreados para inscripciones.
+    DECLARE @NProf INT = 100000;    -- Volumen de profesores a agregar en stress.
+    DECLARE @NAluRun INT = 2000000;   -- Volumen de alumnos muestreados para inscripciones.
     DECLARE @MinParciales INT = 2, @MaxParciales INT = 3;
     DECLARE @MaxProfesorNuevo INT = ISNULL((SELECT MAX(ProfesorID) FROM Catalogos.Profesores), 1);
     DECLARE @MinAsis INT = 2, @MaxAsis INT = 4;
-    DECLARE @NCursos INT = 1000;  -- Volumen de cursos a agregar.
-    DECLARE @NMat INT = 2000;    -- Volumen de materias a agregar.
-    DECLARE @MaxNotas INT = 50000;
+    DECLARE @NCursos INT = 100000;  -- Volumen de cursos a agregar.
+    DECLARE @NMat INT = 200000;    -- Volumen de materias a agregar.
 
 -- -- -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 -- -- > 2. PRIMERA LECTURA: De checkpoints actuales para control de FK (defensivo: 0).
@@ -43,7 +42,6 @@ BEGIN TRY
     DECLARE @NombreBase NVARCHAR(50) = ISNULL(CHOOSE(FLOOR(RAND()*3)+1,'Estudiante', 'Alumno', 'Candidato'),'User');
     DECLARE @UltCurso INT = ISNULL((SELECT UltimoID FROM Control.Checkpoints WHERE Entidad = 'Cursos'),0);
     DECLARE @UltMat INT = ISNULL((SELECT UltimoID FROM Control.Checkpoints WHERE Entidad = 'Materias'),0);
-    DECLARE @MaxDepto INT = ISNULL((SELECT MAX(DeptoID) FROM Catalogos.Departamentos), 1);
 
     PRINT '--------------------------------------------------------------------------------------------------';
     PRINT '🚀 Iniciando Stress Test en P2_EscolarDB...' + CAST(SYSUTCDATETIME() AS VARCHAR);
@@ -70,7 +68,7 @@ BEGIN TRY
             RAISERROR('No se insertaron departamentos en Catalogos.Departamentos. Abortar Insersion',16,1);
             RETURN;
         END
-        PRINT 'Departamentos insertados: ' + FORMAT(@InsertedDeptos, 'N0') + ' | Total Departamentos: ' + FORMAT((SELECT COUNT(*) FROM Catalogos.Departamentos), 'N0');
+        PRINT 'Departamentos insertados: ' + FORMAT(@InsertedDeptos, 'N0');
 
         ;WITH nums AS (
             SELECT TOP (@NProf) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS rnp
@@ -80,9 +78,9 @@ BEGIN TRY
         SELECT N.Nombre, N.Email, N.DeptoID
         FROM ( --Insertar solo si no existe el email (Idempotente).
             SELECT
-                'Prof_Nf_' + CAST(@UltProf + rnp AS VARCHAR(10)) AS Nombre,
-                'prof' + CAST(@UltProf + rnp AS VARCHAR(10)) + '@escolar.edu' AS Email,
-                (ABS(CHECKSUM(NEWID())) % @MaxDepto) + 1 AS DeptoID
+                'Prof_Nf_' + CAST(@UltProf + rnp AS VARCHAR(15)) AS Nombre,
+                'prof' + CAST(@UltProf + rnp AS VARCHAR(15)) + '@escolar.edu' AS Email,
+                (ABS(CHECKSUM(NEWID())) % @InsertedDeptos) + 1 AS DeptoID
             FROM nums
         ) N
         WHERE NOT EXISTS (SELECT 1 FROM Catalogos.Profesores P WHERE P.Email = N.Email);
@@ -93,7 +91,7 @@ BEGIN TRY
             RAISERROR('No se insertaron profesores en Catalogos.Profesores. Abortar Insersion',16,1);
             RETURN;
         END
-        PRINT 'Profesores generados/actualizados:.' + FORMAT(@InsertedProf, 'N0');
+        PRINT 'Profesores generados/actualizados: ' + FORMAT(@InsertedProf, 'N0');
 
 --- -- ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 --- -- 4. DIVERSIFICACIÓN DE CURSOS Y MATERIAS.
@@ -106,7 +104,7 @@ BEGIN TRY
         SELECT Nc.Nombre, Nc.Creditos
         FROM (
             SELECT
-                'NCurso_' + CAST(@UltCurso + rnc AS VARCHAR(10)) AS Nombre,
+                'NCurso_' + CAST(@UltCurso + rnc AS VARCHAR(15)) AS Nombre,
                 (ABS(CHECKSUM(NEWID())) % 4) + 3 AS Creditos
             FROM curs
         ) Nc
@@ -118,7 +116,7 @@ BEGIN TRY
             RAISERROR('No se insertaron Cursos en Catalogos.Cursos. Abortar Insersion',16,1);
             RETURN;
         END
-        PRINT 'Cursos insertados: ' + FORMAT(@InsertedCurs, 'N0');
+        --PRINT 'Cursos insertados: ' + FORMAT(@InsertedCurs, 'N0');
 
         ;WITH mat AS (
             SELECT TOP (@NMat) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS rnm
@@ -128,7 +126,7 @@ BEGIN TRY
         SELECT Nm.Nombre, Nm.Creditos, Nm.ProfesorID
         FROM (
             SELECT
-                'NMateria_' + CAST(@UltMat + rnm AS VARCHAR(10)) AS Nombre,
+                'NMateria_' + CAST(@UltMat + rnm AS VARCHAR(15)) AS Nombre,
                 (ABS(CHECKSUM(NEWID())) % 4) + 3 AS Creditos,
                 (ABS(CHECKSUM(NEWID())) % @MaxProfesorNuevo) + 1 AS ProfesorID
             FROM mat
@@ -141,13 +139,13 @@ BEGIN TRY
             RAISERROR('No se insertaron Materias en Operaciones.Materias. Abortar Insersion',16,1);
             RETURN;
         END
-        PRINT 'Materias insertadas: ' + FORMAT(@InsertedMat, 'N0');
+        --PRINT 'Materias insertadas: ' + FORMAT(@InsertedMat, 'N0');
 
 --- -- ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 --- -- 5. CARGA MASIVA DE ALUMNOS (Se asigna CarreraID y DeptoID coherente).
 --- -- ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         PRINT '--------------------------------------------------------------------------------------------------';
-        PRINT '👥 Generando ' + FORMAT(@InsertedAlu, 'N0')+ ' alumnos con blindaje de nulos...';
+        PRINT '👥 Generando alumnos con blindaje de nulos...';
         PRINT '--------------------------------------------------------------------------------------------------';
 
         -- Paso 1) Materializar Catalogos.Carreras en tabla temporal (blindaje lógico).
@@ -169,8 +167,8 @@ BEGIN TRY
             FROM sys.all_columns
         ), NewAlu AS (
             SELECT
-                @NombreBase + '_ID_' + CAST(@UltAlu + R.rn AS VARCHAR(12)) AS Nombre,
-                LOWER(@NombreBase) + CAST(@UltAlu + R.rn AS VARCHAR(12)) + '@escolar.edu' AS Email,
+                @NombreBase + '_ID_' + CAST(@UltAlu + R.rn AS VARCHAR(20)) AS Nombre,
+                LOWER(@NombreBase) + CAST(@UltAlu + R.rn AS VARCHAR(20)) + '@escolar.edu' AS Email,
                 DATEADD(DAY, -ABS(CHECKSUM(NEWID())) % 36500, GETDATE()) AS FechaNacimiento,
                 FORMAT(DATEADD(DAY, -ABS(CHECKSUM(NEWID())) % 1825, GETDATE()), 'yyyy-MM-dd') + ' | ' +
                     CASE (ABS(CHECKSUM(NEWID())) % 7)
@@ -191,13 +189,13 @@ BEGIN TRY
         FROM NewAlu
         WHERE NOT EXISTS (SELECT 1 FROM Catalogos.Alumnos A WHERE A.Email = NewAlu.Email);
         -- Aplicando la técnica modular evita ordenar aleatoriamente la tabla de carreras cada vez y es mucho más escalable.
-        DECLARE @InsertedAlu INT = (SELECT COUNT(*) FROM Catalogos.Alumnos WHERE AlumnoID > @UltAlu);
+        DECLARE @InsertedAlu INT = (SELECT COUNT(*) FROM Catalogos.Alumnos);
         IF @InsertedAlu = 0
         BEGIN
             RAISERROR('No se insertaron alumnos en Catalogos.Alumnos. Abortar Insersion',16,1);
             RETURN;
         END
-        PRINT 'Numero de Alumnos generados: ' + FORMAT(@InsertedAlu, 'N0');
+        PRINT 'Alumnos Totales generados: ' + FORMAT(@InsertedAlu, 'N0');
 
 ---- -- ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ---- -- > 6. ACTUALIZACION: Para checkpoints intermedios de departamentos, profesores, cursos, materias y alumnos (para control de FK en inscripciones).
@@ -259,7 +257,7 @@ BEGIN TRY
         BEGIN
             RAISERROR('Faltan Cursos o Materias. Abortando inscripciones.',16,1);
         END
-        PRINT 'Cursos materializados: ' + CAST(@CursoCount AS VARCHAR(10)) + ' | Materias: ' + CAST(@MateriaCount AS VARCHAR(10));
+        PRINT 'Cursos materializados: ' + FORMAT(@CursoCount, 'N0') + ' | Materias: ' + FORMAT(@MateriaCount, 'N0');
 
         -- Paso 2) CTE robusta para extraer y normalizar EstatusAcademico desde MetaData_ETL.
         ;WITH AluEstatus AS (
@@ -346,7 +344,7 @@ BEGIN TRY
         BEGIN
             RAISERROR('No se generaron inscripciones en este run. Revisar AluEstatus/Cantidad.',16,1);
         END
-        PRINT 'Inscripciones creadas en este run: ' + CAST(@InsertedIns AS VARCHAR(12));
+        PRINT 'Inscripciones creadas en este run: ' + FORMAT(@InsertedIns, 'N0');
 
 ------- -- ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ------- -- 8. INSERCION DE PARCIALES POR INSCRIPCIONID (1-3 parciales por inscripción).
@@ -369,7 +367,7 @@ BEGIN TRY
             RAISERROR('No se insertaron parciales en Operaciones.Calificaciones. Abortar Insersion',16,1);
             RETURN;
         END 
-        PRINT 'Calificaciónes Parciales insertados: ' + CAST(@InsertedParciales AS VARCHAR(12));
+        PRINT 'Calificaciónes Parciales insertados: ' + FORMAT(@InsertedParciales, 'N0');
 
 ------- -- ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ------- -- 9. AJUSTE: Actualizamos la NotaFinal en Inscripciones como promedio simple de parciales.
@@ -414,7 +412,7 @@ BEGIN TRY
             RAISERROR('No se insertaron asistencias en Operaciones.Asistencias. Abortar Insersion',16,1);
             RETURN;
         END
-        PRINT ' Total Asistencias generadas: ' + CAST(@InsertedAsistencias AS VARCHAR(12));
+        PRINT ' Total Asistencias generadas: ' + FORMAT(@InsertedAsistencias, 'N0');
         PRINT '--- Bloque de Alumnos/Cursos/Materias/Inscripciones/Parciales/Asistencias finalizado exitosamente.---';
 
 ----- ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -455,7 +453,7 @@ BEGIN TRY
         PRINT '       ✅ RESUMEN DE EJECUCIÓN EXITOSA';
         PRINT '============================================================================';
         PRINT '✅ Alumnos Procesados:   ' + FORMAT(@InsertedAlu, 'N0');
-        PRINT '📝 Departamentos Inyectados: ' + FORMAT(@InsertedDeptos, 'N0') + 'Total de Departamentos:'+ FORMAT((SELECT COUNT(*) FROM Catalogos.Departamentos), 'N0');
+        PRINT '📝 Departamentos Inyectados: ' + FORMAT(@InsertedDeptos, 'N0');
         PRINT '📝 Profesores Inyectados: ' + FORMAT(@InsertedProf, 'N0');
         PRINT '📝 Inscripciones Inyectadas: ' + FORMAT(@InsertedIns, 'N0');
         PRINT '📝 Materias Inyectadas:     ' + FORMAT(@InsertedMat, 'N0');
@@ -482,3 +480,4 @@ BEGIN TRY
         PRINT '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!';
 END CATCH
 GO
+
