@@ -16,23 +16,23 @@ GO
 --- -- -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 --- -- VARIABLES DE BUCLE Y MÉTRICAS PARA CONTROL.
 --- -- -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-SET NOCOUNT ON;                                             -- Para reducir tiempo se suprime el mensaje de "(1 filas afectadas)".
-SET XACT_ABORT ON;                                          -- Para asegura que errores aborten la transacción.
+SET NOCOUNT ON;                                         -- Para reducir tiempo se suprime el mensaje de "(1 filas afectadas)".
+SET XACT_ABORT ON;                                      -- Para asegura que errores aborten la transacción.
 DECLARE @StartTime DATETIME2 = SYSUTCDATETIME();
 -- ===================================
 -- Parámetros (ajusta según entorno)
 -- ===================================
-DECLARE @MaxRuns INT = 1;                                   -- Número de ejecuciones completas (runs).
-DECLARE @TargetNewAlu INT = 10000;                          -- Total deseado en este run (ajustar según capacidad y objetivos).
+DECLARE @MaxRuns INT = 1;                               -- Número de ejecuciones completas (runs).
+DECLARE @TargetNewAlu INT = 10000;                      -- Total deseado en este run (ajustar según capacidad y objetivos).
 DECLARE @CurrentRun INT = 1;
-DECLARE @BatchSize INT = 500;                               -- Parámetros de stress inserción masiva Tamaño de lote para operaciones pesadas.
-DECLARE @PauseBetweenBatches VARCHAR(8) = '00:00:01';       -- Pausa entre lotes para reducir presión en el log y evitar timeouts Formato hh:mm:ss.
--- Pausa de 1 segundo entre lotes para reducir presión en el log y evitar timeouts.
-DECLARE @MinAsis INT = 2, @MaxAsis INT = 4;                 -- Rango de asistencias por inscripción.
-DECLARE @MinParciales INT = 2, @MaxParciales INT = 3;       -- Rango de parciales por inscripción.
-DECLARE @NProf INT = 1000;                                  -- Volumen de profesores a generar.
-DECLARE @NAlu INT = 10000;                                  -- Ajustar volumen de alumnos para simular carga.
-DECLARE @NAluRun INT = 10000;                               -- Volumen de alumnos muestreados para Inscripciones por batch.
+DECLARE @BatchSize INT = 500;                           -- Parámetros de stress inserción masiva Tamaño de lote para operaciones pesadas.
+DECLARE @PauseBetweenBatches VARCHAR(8) = '00:00:01';   -- Pausa entre lotes para reducir presión en el log y evitar timeouts Formato hh:mm:ss.
+                                                        -- Pausa de 1 segundo entre lotes para reducir presión en el log y evitar timeouts.
+DECLARE @MinAsis INT = 2, @MaxAsis INT = 4;             -- Rango de asistencias por inscripción.
+DECLARE @MinParciales INT = 2, @MaxParciales INT = 3;   -- Rango de parciales por inscripción.
+DECLARE @NProf INT = 1000;                              -- Volumen de profesores a generar.
+DECLARE @NAlu INT = 10000;                              -- Ajustar volumen de alumnos para simular carga.
+DECLARE @NAluRun INT = 10000;                           -- Volumen de alumnos muestreados para Inscripciones por batch.
 
 
 --- -- -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -54,34 +54,36 @@ PRINT '-------------------------------------------------------------------------
 
 IF OBJECT_ID('Control.LoadLog','U') IS NULL
 BEGIN
-CREATE TABLE Control.LoadLog (
-    LoadLogID INT IDENTITY(1,1) PRIMARY KEY,
-    RunNumber INT,
-    Entidad NVARCHAR(100),
-    BatchOffset INT,
-    RowsAffected INT,
-    Estado NVARCHAR(20),
-    Fecha DATETIME2 DEFAULT SYSUTCDATETIME(),
-    Mensaje NVARCHAR(4000) NULL
-);
+    CREATE TABLE Control.LoadLog (
+        LoadLogID INT IDENTITY(1,1) PRIMARY KEY,
+        RunNumber INT,
+        Entidad NVARCHAR(100),
+        BatchOffset INT,
+        RowsAffected INT,
+        Estado NVARCHAR(20),
+        Fecha DATETIME2 DEFAULT SYSUTCDATETIME(),
+        Mensaje NVARCHAR(4000) NULL
+    );
 END
 
 IF OBJECT_ID('Control.Checkpoints','U') IS NULL
 BEGIN
-CREATE TABLE Control.Checkpoints (
-    Entidad NVARCHAR(100) PRIMARY KEY,
-    UltimoID BIGINT,
-    FechaActualizacion DATETIME2
-);
+    CREATE TABLE Control.Checkpoints (
+        Entidad NVARCHAR(100) PRIMARY KEY,
+        UltimoID BIGINT,
+        FechaActualizacion DATETIME2
+    );
 END
 
 --- ----------------------------
 ---  1.1 VALIDACIONES INICIALES.
 --- ----------------------------
-IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Inscripciones' AND schema_id = SCHEMA_ID('Operaciones'))
+IF NOT EXISTS (SELECT 1
+FROM sys.tables
+WHERE name = 'Inscripciones' AND schema_id = SCHEMA_ID('Operaciones'))
 BEGIN
-RAISERROR('No se encuentra Operaciones.Inscripciones. Verifica esquema.',16,1);
-RETURN;
+    RAISERROR('No se encuentra Operaciones.Inscripciones. Verifica esquema.',16,1);
+    RETURN;
 END
 
 --- --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -136,102 +138,105 @@ BEGIN
 --- -- ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 --- -- 3. POBLADO: Departamentos. (Idempotente: solo inserta si no existe).
 --- -- ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    BEGIN TRAN;
-    BEGIN TRY
-        PRINT '----------------------------------------------------------------';
-        PRINT '🏢   Diversificando de Departamentos..'
-        PRINT '----------------------------------------------------------------';
+BEGIN TRAN;
+BEGIN TRY
+    PRINT '----------------------------------------------------------------';
+    PRINT '🏢   Diversificando de Departamentos..'
+    PRINT '----------------------------------------------------------------';
 
-        IF NOT EXISTS (SELECT 1 FROM Catalogos.Departamentos WHERE Nombre IN (
-            'Departamento de Ciencias Exactas y Naturales',
-            'Departamento de Ciencias Económico-Administrativas',
-            'Departamento de Artes y Diseño',
-            'Departamento de Ciencias de la Salud Pública'
-        ))
-        BEGIN
-            INSERT INTO Catalogos.Departamentos (Nombre, PresupuestoAnual) VALUES
-            ('Departamento de Ciencias Exactas y Naturales', 800000),
-            ('Departamento de Ciencias Económico-Administrativas', 200000),
-            ('Departamento de Artes y Diseño', 450000),
-            ('Departamento de Ciencias de la Salud Pública', 150000);
-        END
+    IF NOT EXISTS (SELECT 1 FROM Catalogos.Departamentos WHERE Nombre IN (
+        'Departamento de Ciencias Exactas y Naturales',
+        'Departamento de Ciencias Económico-Administrativas',
+        'Departamento de Artes y Diseño',
+        'Departamento de Ciencias de la Salud Pública')
+        )
+    BEGIN
+        INSERT INTO Catalogos.Departamentos (Nombre, PresupuestoAnual) VALUES
+        ('Departamento de Ciencias Exactas y Naturales', 800000),
+        ('Departamento de Ciencias Económico-Administrativas', 200000),
+        ('Departamento de Artes y Diseño', 450000),
+        ('Departamento de Ciencias de la Salud Pública', 150000);
+    END
 
-        DECLARE @InsertedDeptos INT = (SELECT COUNT(*) FROM Catalogos.Departamentos);
+        DECLARE @InsertedDeptos INT = (SELECT COUNT(*)
+    FROM Catalogos.Departamentos);
             IF @InsertedDeptos = 0
             BEGIN
-                RAISERROR('No se insertaron departamentos en Catalogos.Departamentos. Abortar Insersion',16,1);
-            RETURN;
-        END
-        PRINT 'Departamentos insertados: ' + FORMAT(@InsertedDeptos, 'N0');
+        RAISERROR('No se insertaron departamentos en Catalogos.Departamentos. Abortar Insersion',16,1);
+        RETURN;
+    END
+    PRINT 'Departamentos insertados: ' + FORMAT(@InsertedDeptos, 'N0');
 
 --- -------------------------------------------------------------------------
 --- -- 4. GENERACIÓN DE PROFESORES (idempotente).
 --- -------------------------------------------------------------------------
-        ;WITH nums AS (
-            SELECT TOP (@NProf) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS rn
-            FROM sys.all_columns
-        ), NewProfs AS (
-            SELECT
-                'NProf_' + CAST(rn AS VARCHAR(12)) AS Nombre,
-                'Nprof' + CAST(rn AS VARCHAR(12)) + '@escolar.edu' AS Email,
-                ((rn - 1) % (SELECT COUNT(*) FROM Catalogos.Departamentos)) + 1 AS DeptoID
-            FROM nums
-            )
-        INSERT INTO Catalogos.Profesores (Nombre, Email, DeptoID)
-        SELECT N.Nombre, N.Email, N.DeptoID
-        FROM NewProfs N
-        WHERE NOT EXISTS (SELECT 1 FROM Catalogos.Profesores P WHERE P.Email = N.Email);
+    ;WITH nums AS (
+        SELECT TOP (@NProf) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS rn
+        FROM sys.all_columns
+    ), NewProfs AS (
+    SELECT
+        'NProf_' + CAST(rn AS VARCHAR(12)) AS Nombre,
+        'Nprof' + CAST(rn AS VARCHAR(12)) + '@escolar.edu' AS Email,
+        ((rn - 1) % (SELECT COUNT(*) FROM Catalogos.Departamentos)) + 1 AS DeptoID
+    FROM nums
+    )
+    INSERT INTO Catalogos.Profesores (Nombre, Email, DeptoID)
+    SELECT N.Nombre, N.Email, N.DeptoID
+    FROM NewProfs N WHERE NOT EXISTS (SELECT 1 FROM Catalogos.Profesores P WHERE P.Email = N.Email);
 
-        -- Se actualizar checkpoint Profesores.
-        MERGE Control.Checkpoints AS C
-        USING (SELECT 'Profesores' AS Entidad, ISNULL(MAX(ProfesorID),0) AS UltimoID FROM Catalogos.Profesores) AS S
-        ON C.Entidad = S.Entidad
-        WHEN MATCHED THEN UPDATE SET UltimoID = S.UltimoID, FechaActualizacion = SYSUTCDATETIME()
-        WHEN NOT MATCHED THEN INSERT (Entidad, UltimoID, FechaActualizacion) VALUES (S.Entidad, S.UltimoID, SYSUTCDATETIME());
+    -- Se actualizar checkpoint Profesores.
+    MERGE Control.Checkpoints AS C
+    USING (SELECT 'Profesores' AS Entidad, ISNULL(MAX(ProfesorID),0) AS UltimoID 
+    FROM Catalogos.Profesores) AS S ON C.Entidad = S.Entidad
+    WHEN MATCHED THEN UPDATE SET UltimoID = S.UltimoID, FechaActualizacion = SYSUTCDATETIME()
+    WHEN NOT MATCHED THEN INSERT (Entidad, UltimoID, FechaActualizacion) VALUES (S.Entidad, S.UltimoID, SYSUTCDATETIME());
 
-        DECLARE @InsertedProf INT=(SELECT COUNT(*)
-        FROM Catalogos.Profesores
-        WHERE ProfesorID > @UltProf);
-            IF @InsertedProf = 0
-            BEGIN
-                RAISERROR('No se insertaron profesores en Catalogos.Profesores. Abortar Insersion',16,1);
-            RETURN;
-        END
-        PRINT 'Profesores generados/actualizados: ' + FORMAT(@InsertedProf, 'N0');
+    DECLARE @InsertedProf INT=(SELECT COUNT(*)
+    FROM Catalogos.Profesores
+    WHERE ProfesorID > @UltProf);
+    IF @InsertedProf = 0
+    BEGIN
+        RAISERROR('No se insertaron profesores en Catalogos.Profesores. Abortar Insersion',16,1);
+    RETURN;
+    END
+    PRINT 'Profesores generados/actualizados: ' + FORMAT(@InsertedProf, 'N0');
 
 --- -- ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 --- -- 5. DIVERSIFICACIÓN DE CURSOS Y MATERIAS.
 --- -- ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-        IF NOT EXISTS (SELECT 1 FROM Catalogos.Cursos WHERE Nombre LIKE 'StressCurso_%')
-        BEGIN
-        INSERT INTO Catalogos.Cursos (Nombre) 
+    IF NOT EXISTS (SELECT 1 FROM Catalogos.Cursos WHERE Nombre LIKE 'StressCurso_%')
+    BEGIN
+        INSERT INTO Catalogos.Cursos (Nombre)
         SELECT 'NCurso_' + CAST(ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS VARCHAR(15))
-        FROM (SELECT 1 UNION ALL SELECT 1 UNION ALL SELECT 1 UNION ALL SELECT 1 UNION ALL SELECT 1 UNION ALL SELECT 1 UNION ALL SELECT 1 UNION ALL SELECT 1 UNION ALL SELECT 1 UNION ALL SELECT 1) a(n)
-        CROSS JOIN (SELECT 1 UNION ALL SELECT 1 UNION ALL SELECT 1 UNION ALL SELECT 1 UNION ALL SELECT 1) b(n); -- 50 ejemplo
-        END
+        FROM ( SELECT 1 UNION ALL SELECT 1 UNION ALL SELECT 1 UNION ALL SELECT 1 UNION ALL SELECT 1 UNION ALL SELECT 1 UNION ALL SELECT 1 UNION ALL SELECT 1 UNION ALL SELECT 1 UNION ALL SELECT 1) a(n)
+        CROSS JOIN ( SELECT 1 UNION ALL SELECT 1 UNION ALL SELECT 1 UNION ALL SELECT 1 UNION ALL SELECT 1) b(n);
+    -- 50 ejemplo
+    END
     
-        DECLARE @InsertedCurs INT = (SELECT COUNT(*) FROM Catalogos.Cursos);
-            IF @InsertedCurs = 0
+    DECLARE @InsertedCurs INT = (SELECT COUNT(*)
+    FROM Catalogos.Cursos);
+        IF @InsertedCurs = 0
             BEGIN
-                RAISERROR('No se insertaron Cursos en Catalogos.Cursos. Abortar Insersion',16,1);
-            RETURN;
-        END
-        PRINT 'Cursos insertados: ' + FORMAT(@InsertedCurs, 'N0');
+        RAISERROR('No se insertaron Cursos en Catalogos.Cursos. Abortar Insersion',16,1);
+    RETURN;
+    END
+    PRINT 'Cursos insertados: ' + FORMAT(@InsertedCurs, 'N0');
 
-        IF NOT EXISTS (SELECT 1 FROM Operaciones.Materias WHERE Nombre LIKE 'StressMateria_%')
-        BEGIN
+    IF NOT EXISTS (SELECT 1 FROM Operaciones.Materias WHERE Nombre LIKE 'StressMateria_%')
+    BEGIN
         INSERT INTO Operaciones.Materias (Nombre)
         SELECT 'NMateria_' + CAST(ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS VARCHAR(15))
-        FROM (SELECT 1 UNION ALL SELECT 1 UNION ALL SELECT 1 UNION ALL SELECT 1 UNION ALL SELECT 1) a(n)
-        CROSS JOIN (SELECT 1 UNION ALL SELECT 1 UNION ALL SELECT 1) b(n); -- 15 ejemplo
-        END
+        FROM (SELECT 1 UNION ALL SELECT 1 UNION ALL SELECT 1 UNION ALL SELECT 1 UNION ALL SELECT 1) a(n) 
+            CROSS JOIN ( SELECT 1 UNION ALL SELECT 1 UNION ALL SELECT 1) b(n);    -- 15 ejemplo
+    END
 
-        DECLARE @InsertedMat INT = (SELECT COUNT(*) FROM Operaciones.Materias);
-            IF @InsertedMat = 0
+    DECLARE @InsertedMat INT = (SELECT COUNT(*)
+    FROM Operaciones.Materias);
+        IF @InsertedMat = 0
             BEGIN
-                RAISERROR('No se insertaron Materias en Operaciones.Materias. Abortar Insersion',16,1);
-            RETURN;
-        END
+        RAISERROR('No se insertaron Materias en Operaciones.Materias. Abortar Insersion',16,1);
+    RETURN;
+    END
         PRINT 'Materias insertadas: ' + FORMAT(@InsertedMat, 'N0');
 
     -- Actualizar checkpoints de Cursos y Materias.
@@ -267,7 +272,9 @@ BEGIN
     PRINT '----------------------------------------------------------';
 
     -- Cuenta cuántos alumnos ya existen con el prefijo de stress (ajusta el filtro si usas otro patrón)
-    DECLARE @Already INT = (SELECT COUNT(*) FROM Catalogos.Alumnos WHERE Email LIKE '%10000_@escolar.edu');
+    DECLARE @Already INT = (SELECT COUNT(*)
+    FROM Catalogos.Alumnos
+    WHERE Email LIKE '%10000_@escolar.edu');
     DECLARE @Remaining INT = CASE WHEN @TargetNewAlu > @Already THEN @TargetNewAlu - @Already ELSE 0 END;
     DECLARE @InsertedTotal INT = 0;
 
@@ -283,8 +290,10 @@ BEGIN
                 FROM sys.all_columns
             ), NewAlu AS (
                 SELECT
-                    @NombreBase + '_ID_' + CAST((SELECT ISNULL(MAX(AlumnoID),0) FROM Catalogos.Alumnos) + rn + @InsertedTotal AS VARCHAR(20)) AS Nombre,
-                    LOWER(@NombreBase) + CAST((SELECT ISNULL(MAX(AlumnoID),0) FROM Catalogos.Alumnos) + rn + @InsertedTotal AS VARCHAR(20)) + '@escolar.edu' AS Email,
+                    @NombreBase + '_ID_' + CAST((SELECT ISNULL(MAX(AlumnoID),0)
+                    FROM Catalogos.Alumnos) + rn + @InsertedTotal AS VARCHAR(20)) AS Nombre,
+                    LOWER(@NombreBase) + CAST((SELECT ISNULL(MAX(AlumnoID),0)
+                    FROM Catalogos.Alumnos) + rn + @InsertedTotal AS VARCHAR(20)) + '@escolar.edu' AS Email,
                     DATEADD(DAY, -((rn + @InsertedTotal) % 36500), GETDATE()) AS FechaNacimiento,
                     -- MetaData_ETL: fecha | estatus | nota (ejemplo).
                     FORMAT(DATEADD(DAY, -ABS(CHECKSUM(NEWID())) % 1825, GETDATE()), 'yyyy-MM-dd') + ' | ' +
@@ -293,7 +302,9 @@ BEGIN
                             WHEN 3 THEN 'BAJA_TEMP' WHEN 4 THEN 'BAJA_DEFI' WHEN 5 THEN 'EGRESADO' ELSE 'TITULADO'
                     END + ' | ' + CAST((ABS(CHECKSUM(NEWID())) % 41) + 60 AS VARCHAR(5)) AS MetaData_ETL,
                     ((rn + @InsertedTotal - 1) % @CarrCount) + 1 AS CarreraID,
-                    (SELECT DeptoID FROM #CarrList WHERE CarrRow = ((rn + @InsertedTotal - 1) % @CarrCount) + 1) AS DeptoID
+                    (SELECT DeptoID
+                    FROM #CarrList
+                    WHERE CarrRow = ((rn + @InsertedTotal - 1) % @CarrCount) + 1) AS DeptoID
                 FROM RandRows
             )
             INSERT INTO Catalogos.Alumnos (Nombre, Email, FechaNacimiento, MetaData_ETL, CarreraID, DeptoID)
@@ -311,7 +322,7 @@ BEGIN
 
             PRINT 'Batch Alumnos insertados: ' + FORMAT(@RowsThis, 'N0') + ' | Total insertados en este run: ' + FORMAT(@InsertedTotal, 'N0');
             WAITFOR DELAY @PauseBetweenBatches;
-        END
+        END TRY
         
         BEGIN CATCH
             IF XACT_STATE() <> 0 ROLLBACK;
@@ -319,11 +330,10 @@ BEGIN
             VALUES (@CurrentRun, 'Alumnos', @InsertedTotal, 0, 'ROLLBACK', ERROR_MESSAGE());
             THROW;
         END CATCH;
-    IF @Iter >= @MaxIters
-        BEGIN
-            RAISERROR('Máximo de iteraciones alcanzado, abortando para evitar loop infinito',16,1);
-        RETURN;
     END
+    IF @Iter >= @MaxIters
+    BEGIN
+        RAISERROR('Máximo de iteraciones alcanzado, abortando para evitar loop infinito',16,1);
 
 --- -- --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 --- -- 7. GENERAR INSCRIPCIONES MASIVAS POR LOTES (OUTPUT -> #NewIns), Parciales y Asistencias).
@@ -336,10 +346,15 @@ BEGIN
 
     WHILE @RowsIns > 0
     BEGIN
-        BEGIN TRAN;
-        BEGIN TRY
-            ;WITH ToProcess AS (    -- Realizamos la extracción del token EstatusAcademico para decidir cantidad, pero sin usar funciones de texto complejas en la consulta principal.
-                SELECT TOP (@BatchSize) A.AlumnoID,
+            BEGIN TRAN;
+            BEGIN TRY
+            ;WITH
+                ToProcess
+                AS
+                (
+                    -- Realizamos la extracción del token EstatusAcademico para decidir cantidad, pero sin usar funciones de texto complejas en la consulta principal.
+                    SELECT TOP (@BatchSize)
+                        A.AlumnoID,
                         -- extraer EstatusAcademico token para decidir cantidad
                         CASE
                             WHEN CHARINDEX('|',A.MetaData_ETL) = 0 THEN NULL
@@ -353,19 +368,20 @@ BEGIN
                                 )
                             )))
                         END AS RawEstatus
-                FROM Catalogos.Alumnos A
-                LEFT JOIN Operaciones.Inscripciones I ON I.AlumnoID = A.AlumnoID AND I.CicloEscolar = CAST(YEAR(GETDATE()) AS VARCHAR(4)) + '-1'
-                WHERE I.InscripcionID IS NULL
-                ORDER BY A.AlumnoID
-            )
-            INSERT INTO Operaciones.Inscripciones (AlumnoID, MateriaID, CursoID, CicloEscolar, NotaFinal)
+                    FROM Catalogos.Alumnos A
+                        LEFT JOIN Operaciones.Inscripciones I ON I.AlumnoID = A.AlumnoID AND I.CicloEscolar = CAST(YEAR(GETDATE()) AS VARCHAR(4)) + '-1'
+                    WHERE I.InscripcionID IS NULL
+                    ORDER BY A.AlumnoID
+                )
+            INSERT INTO Operaciones.Inscripciones
+                (AlumnoID, MateriaID, CursoID, CicloEscolar, NotaFinal)
             OUTPUT inserted.InscripcionID, inserted.AlumnoID, inserted.MateriaID, inserted.CursoID, inserted.CicloEscolar, inserted.NotaFinal
             INTO #NewIns (InscripcionID, AlumnoID, MateriaID, CursoID, CicloEscolar, NotaFinal)
             SELECT tp.AlumnoID,
-                    M.MateriaID,
-                    C.CursoID,
-                    CAST(YEAR(GETDATE()) AS VARCHAR(4)) + '-1',
-                    NULL
+                M.MateriaID,
+                C.CursoID,
+                CAST(YEAR(GETDATE()) AS VARCHAR(4)) + '-1',
+                NULL
             FROM ToProcess tp
             CROSS APPLY (
                 SELECT CASE
@@ -376,34 +392,61 @@ BEGIN
             END AS Cantidad
             ) Cnt
             CROSS APPLY (
-                SELECT n FROM (
+                SELECT n
+                FROM (
                     SELECT ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS n
-                    FROM (VALUES(0),(0),(0),(0),(0),(0),(0),(0),(0),(0)) a(n)
-                    CROSS JOIN (VALUES(0),(0),(0),(0),(0),(0),(0),(0),(0),(0)) b(n)
-                ) Tally WHERE n <= Cnt.Cantidad
+                    FROM (VALUES(0),
+                            (0),
+                            (0),
+                            (0),
+                            (0),
+                            (0),
+                            (0),
+                            (0),
+                            (0),
+                            (0)) a(n)
+                    CROSS JOIN (VALUES(0),
+                            (0),
+                            (0),
+                            (0),
+                            (0),
+                            (0),
+                            (0),
+                            (0),
+                            (0),
+                            (0)) b(n)
+                ) Tally
+                WHERE n <= Cnt.Cantidad
             ) t
             CROSS APPLY (
-                SELECT TOP (1) MateriaID FROM #Materias
+                SELECT TOP (1)
+                    MateriaID
+                FROM #Materias
                 WHERE MateriaRow = ((ABS(CHECKSUM(CONCAT(tp.AlumnoID, t.n))) % @MateriaCount) + 1)
                 ORDER BY MateriaID
             ) M
             CROSS APPLY (
-                SELECT TOP (1) CursoID FROM #Cursos
+                SELECT TOP (1)
+                    CursoID
+                FROM #Cursos
                 WHERE CursoRow = ((ABS(CHECKSUM(CONCAT(tp.AlumnoID, t.n))) % @CursoCount) + 1)
                 ORDER BY CursoID
             ) C
             WHERE Cnt.Cantidad > 0
                 AND NOT EXISTS (
-                    SELECT 1 FROM Operaciones.Inscripciones I2
-                    WHERE I2.AlumnoID = tp.AlumnoID
-                        AND I2.MateriaID = M.MateriaID
-                        AND I2.CursoID = C.CursoID
-                        AND I2.CicloEscolar = CAST(YEAR(GETDATE()) AS VARCHAR(4)) + '-1'
+                    SELECT 1
+                FROM Operaciones.Inscripciones I2
+                WHERE I2.AlumnoID = tp.AlumnoID
+                    AND I2.MateriaID = M.MateriaID
+                    AND I2.CursoID = C.CursoID
+                    AND I2.CicloEscolar = CAST(YEAR(GETDATE()) AS VARCHAR(4)) + '-1'
             );
             SET @RowsIns = @@ROWCOUNT;
             -- Log y checkpoint.
-            INSERT INTO Control.LoadLog (RunNumber, Entidad, BatchOffset, RowsAffected, Estado)
-            VALUES (@CurrentRun, 'Inscripciones', @OffsetIns, @RowsIns, 'COMMIT');
+            INSERT INTO Control.LoadLog
+                (RunNumber, Entidad, BatchOffset, RowsAffected, Estado)
+            VALUES
+                (@CurrentRun, 'Inscripciones', @OffsetIns, @RowsIns, 'COMMIT');
 
             COMMIT;
             PRINT 'Batch Inscripciones insertadas: ' + CAST(@RowsIns AS VARCHAR(10)) + ' (offset ' + CAST(@OffsetIns AS VARCHAR(10)) + ')';
@@ -412,21 +455,24 @@ BEGIN
         END TRY
         BEGIN CATCH
             IF XACT_STATE() <> 0 ROLLBACK;
-            INSERT INTO Control.LoadLog (RunNumber, Entidad, BatchOffset, RowsAffected, Estado, Mensaje)
-            VALUES (@CurrentRun, 'Inscripciones', @OffsetIns, 0, 'ROLLBACK', ERROR_MESSAGE());
+            INSERT INTO Control.LoadLog
+                (RunNumber, Entidad, BatchOffset, RowsAffected, Estado, Mensaje)
+            VALUES
+                (@CurrentRun, 'Inscripciones', @OffsetIns, 0, 'ROLLBACK', ERROR_MESSAGE());
             PRINT 'ERROR en batch Inscripciones: ' + ERROR_MESSAGE();
             THROW;
         END CATCH;
-    END
-        
---- -- ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
---- -- 8. INSERCION DE PARCIALES POR LOTES USANDO INSCRIPCIONID (1-3 parciales por inscripción, evitando duplicados).
---- -- ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    -- Asegurarse de que #NewIns existe y contiene filas; si no, crear temporal vacía.
-    DECLARE @RowsPar INT = 0;
-    BEGIN TRAN;
-    BEGIN TRY
-        INSERT INTO Operaciones.Calificaciones (InscripcionID, ParcialNumero, AlumnoID, CursoID, Nota, FechaAplicacion)
+        END
+
+        --- -- ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        --- -- 8. INSERCION DE PARCIALES POR LOTES USANDO INSCRIPCIONID (1-3 parciales por inscripción, evitando duplicados).
+        --- -- ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        -- Asegurarse de que #NewIns existe y contiene filas; si no, crear temporal vacía.
+        DECLARE @RowsPar INT = 0;
+        BEGIN TRAN;
+        BEGIN TRY
+        INSERT INTO Operaciones.Calificaciones
+            (InscripcionID, ParcialNumero, AlumnoID, CursoID, Nota, FechaAplicacion)
         SELECT N.InscripcionID,
             P.ParcialNum,
             N.AlumnoID,
@@ -434,31 +480,39 @@ BEGIN
             CAST((ABS(CHECKSUM(CONCAT(N.InscripcionID,'-',P.ParcialNum))) % 101) AS DECIMAL(5,2)),
             SYSUTCDATETIME()
         FROM #NewIns N
-        CROSS JOIN (VALUES (1),(2),(3)) AS P(ParcialNum)
-        LEFT JOIN Operaciones.Calificaciones C ON C.InscripcionID = N.InscripcionID AND C.ParcialNumero = P.ParcialNum
+        CROSS JOIN (VALUES
+                (1),
+                (2),
+                (3)) AS P(ParcialNum)
+            LEFT JOIN Operaciones.Calificaciones C ON C.InscripcionID = N.InscripcionID AND C.ParcialNumero = P.ParcialNum
         WHERE C.CalificacionID IS NULL;
 
         SET @RowsPar = @@ROWCOUNT;
-        INSERT INTO Control.LoadLog (RunNumber, Entidad, BatchOffset, RowsAffected, Estado)
-        VALUES (@CurrentRun, 'Calificaciones', 0, @RowsPar, 'COMMIT');
+        INSERT INTO Control.LoadLog
+            (RunNumber, Entidad, BatchOffset, RowsAffected, Estado)
+        VALUES
+            (@CurrentRun, 'Calificaciones', 0, @RowsPar, 'COMMIT');
 
         COMMIT;
         PRINT 'Parciales insertados para nuevas inscripciones: ' + CAST(@RowsPar AS VARCHAR(10));
     END TRY
     BEGIN CATCH
         IF XACT_STATE() <> 0 ROLLBACK;
-        INSERT INTO Control.LoadLog (RunNumber, Entidad, BatchOffset, RowsAffected, Estado, Mensaje)
-        VALUES (@CurrentRun, 'Calificaciones', 0, 0, 'ROLLBACK', ERROR_MESSAGE());
+        INSERT INTO Control.LoadLog
+            (RunNumber, Entidad, BatchOffset, RowsAffected, Estado, Mensaje)
+        VALUES
+            (@CurrentRun, 'Calificaciones', 0, 0, 'ROLLBACK', ERROR_MESSAGE());
         PRINT 'ERROR en inserción de parciales: ' + ERROR_MESSAGE();
         THROW;
     END CATCH;
 
---- -- ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
---- -- 9. GENERAR ASISTENCIAS DETERMINISTAS POR LOTES (USANDO #NewIns PARA CONTROL DE FK).
---- -- ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
--- Generar asistencias por InscripcionID usando CicloEscolar 'YYYY-1' o 'YYYY-2'
--- Expandir en batches para no saturar log y evitar timeouts, generando fechas de asistencia dentro del semestre correspondiente.
-    DECLARE @InsCount INT = (SELECT COUNT(*) FROM #NewIns);
+    --- -- ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    --- -- 9. GENERAR ASISTENCIAS DETERMINISTAS POR LOTES (USANDO #NewIns PARA CONTROL DE FK).
+    --- -- ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    -- Generar asistencias por InscripcionID usando CicloEscolar 'YYYY-1' o 'YYYY-2'
+    -- Expandir en batches para no saturar log y evitar timeouts, generando fechas de asistencia dentro del semestre correspondiente.
+    DECLARE @InsCount INT = (SELECT COUNT(*)
+    FROM #NewIns);
     DECLARE @InsOffset INT = 0;
     DECLARE @RowsAsis INT = 1;
 
@@ -475,9 +529,9 @@ BEGIN
             Sem AS (
                 SELECT B.InscripcionID, B.AlumnoID, B.CursoID, B.CicloEscolar,
                     CASE WHEN RIGHT(B.CicloEscolar,1) = '1' THEN DATEFROMPARTS(CAST(LEFT(B.CicloEscolar,4) AS INT),1,1)
-                            ELSE DATEFROMPARTS(CAST(LEFT(B.CicloEscolar,4) AS INT),7,1) END AS SemInicio,
+                        ELSE DATEFROMPARTS(CAST(LEFT(B.CicloEscolar,4) AS INT),7,1) END AS SemInicio,
                     CASE WHEN RIGHT(B.CicloEscolar,1) = '1' THEN DATEFROMPARTS(CAST(LEFT(B.CicloEscolar,4) AS INT),6,30)
-                            ELSE DATEFROMPARTS(CAST(LEFT(B.CicloEscolar,4) AS INT),12,31) END AS SemFin
+                        ELSE DATEFROMPARTS(CAST(LEFT(B.CicloEscolar,4) AS INT),12,31) END AS SemFin
                 FROM BatchIns B
             ),
             Expanded AS (
@@ -485,18 +539,18 @@ BEGIN
                     ROW_NUMBER() OVER (PARTITION BY S.InscripcionID ORDER BY (SELECT NULL)) AS Seq,
                     (ABS(CHECKSUM(CONCAT('C',S.InscripcionID,'-',S.AlumnoID))) % (@MaxAsis - @MinAsis + 1)) + @MinAsis AS Cantidad
                 FROM Sem S
-                CROSS JOIN (SELECT 1 AS n UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4) t
+                CROSS JOIN ( SELECT 1 AS n UNION ALL SELECT 2 UNION ALL  SELECT 3 UNION ALL  SELECT 4) t
             )
             INSERT INTO Operaciones.Asistencias (InscripcionID, AlumnoID, CursoID, FechaAsistencia, Presente)
             SELECT E.InscripcionID, E.AlumnoID, E.CursoID, CA.FechaAsistencia, CA.Presente
             FROM Expanded E
             CROSS APPLY (
                 SELECT
-                CAST(
+                    CAST(
                     DATEADD(
-                    DAY,
-                    (ABS(CHECKSUM(CONCAT('D',E.InscripcionID,'-',E.Seq))) % (DATEDIFF(DAY, E.SemInicio, E.SemFin) + 1)),
-                    E.SemInicio
+                        DAY,
+                        (ABS(CHECKSUM(CONCAT('D',E.InscripcionID,'-',E.Seq))) % (DATEDIFF(DAY, E.SemInicio, E.SemFin) + 1)),
+                        E.SemInicio
                     ) AS DATE
                 ) AS FechaAsistencia,
                 CASE WHEN (ABS(CHECKSUM(CONCAT('P',E.InscripcionID,'-',E.Seq))) % 10) < 8 THEN 1 ELSE 0 END AS Presente
@@ -505,9 +559,9 @@ BEGIN
                 AND E.SemInicio IS NOT NULL
                 AND E.SemFin IS NOT NULL
                 AND NOT EXISTS (
-                    SELECT 1 FROM Operaciones.Asistencias A
-                    WHERE A.InscripcionID = E.InscripcionID
-                        AND A.FechaAsistencia = CA.FechaAsistencia
+                SELECT 1 FROM Operaciones.Asistencias A
+                WHERE A.InscripcionID = E.InscripcionID
+                    AND A.FechaAsistencia = CA.FechaAsistencia
                 );
 
             SET @RowsAsis = @@ROWCOUNT;
@@ -528,9 +582,9 @@ BEGIN
         END CATCH;
     END
 
---- -- ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
---- -- 9. AJUSTE: Actualizamos la NotaFinal por lotes (ignorando ceros para no afectar inscripciones sin parciales aún).
---- -- ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    --- -- ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    --- -- 9. AJUSTE: Actualizamos la NotaFinal por lotes (ignorando ceros para no afectar inscripciones sin parciales aún).
+    --- -- ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     DECLARE @RowsUpd INT = 1;
     WHILE @RowsUpd > 0
     BEGIN
@@ -568,9 +622,9 @@ BEGIN
         END CATCH;
     END
 
---- ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
---- -- > 10.  ACTUALIZACION: Para checkpoints de Inscripcion, Calificaciones y Asistencias (para control de FK en procesos posteriores).
---- ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        --- ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        --- -- > 10.  ACTUALIZACION: Para checkpoints de Inscripcion, Calificaciones y Asistencias (para control de FK en procesos posteriores).
+        --- ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     BEGIN TRAN;
     BEGIN TRY
         MERGE Control.Checkpoints AS CkpI
@@ -591,22 +645,24 @@ BEGIN
         WHEN MATCHED THEN UPDATE SET UltimoID = SEn.UltimoID, FechaActualizacion = SYSUTCDATETIME()
         WHEN NOT MATCHED THEN INSERT (Entidad, UltimoID, FechaActualizacion) VALUES (SEn.Entidad, SEn.UltimoID, SYSUTCDATETIME());
 
-    -- Aplicamos Limpieza temporal a nuesta tabla de Inscripciones.
-    -- NOTA: durante pruebas deja las temp tables para inspección
-    --IF OBJECT_ID('tempdb..#NewIns') IS NOT NULL DROP TABLE #NewIns;
-    --IF OBJECT_ID('tempdb..#Cursos') IS NOT NULL DROP TABLE #Cursos;
-    --IF OBJECT_ID('tempdb..#Materias') IS NOT NULL DROP TABLE #Materias;
-    --IF OBJECT_ID('tempdb..#CarrList') IS NOT NULL DROP TABLE #CarrList;
+        -- Aplicamos Limpieza temporal a nuesta tabla de Inscripciones.
+        -- NOTA: durante pruebas deja las temp tables para inspección
+        --IF OBJECT_ID('tempdb..#NewIns') IS NOT NULL DROP TABLE #NewIns;
+        --IF OBJECT_ID('tempdb..#Cursos') IS NOT NULL DROP TABLE #Cursos;
+        --IF OBJECT_ID('tempdb..#Materias') IS NOT NULL DROP TABLE #Materias;
+        --IF OBJECT_ID('tempdb..#CarrList') IS NOT NULL DROP TABLE #CarrList;
 
 ------- ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ------- -- 12. MÉTRICAS FINALES.
 ------- ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    COMMIT;
+        COMMIT;
     END TRY
     BEGIN CATCH
         IF XACT_STATE() <> 0 ROLLBACK;
-        INSERT INTO Control.LoadLog (RunNumber, Entidad, BatchOffset, RowsAffected, Estado, Mensaje)
-        VALUES (@CurrentRun, 'Checkpoints', 0, 0, 'ROLLBACK', ERROR_MESSAGE());
+        INSERT INTO Control.LoadLog
+            (RunNumber, Entidad, BatchOffset, RowsAffected, Estado, Mensaje)
+        VALUES
+            (@CurrentRun, 'Checkpoints', 0, 0, 'ROLLBACK', ERROR_MESSAGE());
         DECLARE @ErrMsg NVARCHAR(4000)=ERROR_MESSAGE(), @ErrLine INT = ERROR_LINE();
         PRINT '';
         PRINT '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!';
@@ -619,7 +675,7 @@ BEGIN
         PRINT '    ERROR: ' + ISNULL(@ErrMsg,'(sin mensaje)') + ' en Linea: ' + CAST(@ErrLine AS VARCHAR(10));
         THROW;
     END CATCH;
-    
+
     DECLARE @EndTime DATETIME2 = SYSUTCDATETIME();
     PRINT '';
     PRINT '============================================================================';
@@ -639,5 +695,3 @@ BEGIN
     PRINT '';
     WAITFOR DELAY @PauseBetweenBatches;
 END
-
-
