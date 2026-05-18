@@ -16,8 +16,10 @@ USE P2_EscolarDB;
 GO
 
 -- Preparacion de entorno para proceso ETL.
-SET NOCOUNT ON; -- Suuprir el mensaje: "(1 filas afectadas)".
-DECLARE @StartTime DATETIME2 = SYSUTCDATETIME(); --Data Typing para métricas de tiempo.
+SET NOCOUNT ON;
+-- Suuprir el mensaje: "(1 filas afectadas)".
+DECLARE @StartTime DATETIME2 = SYSUTCDATETIME();
+--Data Typing para métricas de tiempo.
 
 BEGIN TRY
     BEGIN TRANSACTION;
@@ -28,20 +30,24 @@ BEGIN TRY
 --- -- ---------------------------------------------------------------------------------------------------------------------------------------------------
 --- -- 1. TRANSFORMACIÓN Y PERSISTENCIA FÍSICA SINGLE-PASS (UPDATE ATÓMICO).
 --- -- ---------------------------------------------------------------------------------------------------------------------------------------------------
-    ;WITH Posiciones AS (
+    ;WITH
+    Posiciones
+    AS
+    (
         -- Localizamos los delimitadores una sola vez para eficiencia de CPU.
-        SELECT 
+        SELECT
             AlumnoID, MetaData_ETL, Nombre,
             CHARINDEX('|', MetaData_ETL) as P1,
             CHARINDEX('|', MetaData_ETL, CHARINDEX('|', MetaData_ETL) + 1) as P2
         FROM Catalogos.Alumnos
-        WHERE MetaData_ETL LIKE '%|%|%' -- SARGability: Solo procesamos datos sucios.
+        WHERE MetaData_ETL LIKE '%|%|%'
+        -- SARGability: Solo procesamos datos sucios.
     )
     UPDATE A
     SET 
         -- Extracción y conversión de tipos en una sola pasada. Blindaje contra errores de casting (Data Resiliencia).
         A.FechaIngreso      = TRY_CAST(TRIM(LEFT(P.MetaData_ETL, P.P1 - 1)) AS DATE),
-        -- Estatus Académico: Ejemplo 'PAGADO | OK' -> 'Pagado'
+        -- Estatus Académico: Ejemplo 'ACTIVO | OK' -> 'Activo'
         A.EstatusAcademico  = UPPER(LEFT(TRIM(SUBSTRING(P.MetaData_ETL, P.P1 + 1, P.P2 - P.P1 - 1)), 1)) + 
                                 LOWER(SUBSTRING(TRIM(SUBSTRING(P.MetaData_ETL, P.P1 + 1, P.P2 - P.P1 - 1)), 2, 50)),
         

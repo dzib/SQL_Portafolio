@@ -18,12 +18,27 @@
 
 1. **01_Setup_DDL:** Arquitectura PascalCase con esquemas segmentados (`Catalogos`, `Operaciones`). Implementación de **Idempotencia Senior** con reseteo forzado de conexiones (`SINGLE_USER`).
 2. **02_DML_Seed:** Poblado de catálogos maestros con jerarquía relacional:  **Departamentos (Facultades) ➡️ Carreras ➡️ Alumnos** **.**
-3. **03_Stress_Test:** Inyección masiva de 5,000 registros con **Blindaje Proactivo de Nulos** y distribución aleatoria de alumnos por facultad para pruebas de carga realistas.
-4. **04_ETL_Limpieza (Fase de Valor):**
-   * **Single-Pass Processing:** Uso de **CTEs** para localizar delimitadores una sola vez, optimizando el uso de CPU.
+3. **03_Stress_Test:** Inyección masiva de 5,000 registros con **Blindaje Proactivo de Nulos** y distribución aleatoria de alumnos por facultad para pruebas de carga realistas. Caracterización de incripcion de acuerdo a su estatus academico.
+
+   > 🔎 **Tabla de referencia** (estatus → rango de materias)
+   >
+
+| Estatus     | Rango de materias |           Justificación           |
+| :---------- | :---------------: | :---------------------------------: |
+| REGULAR     |       6–7       |    Carga completa, alumno activo    |
+| IRREGULAR   |       3–5       | Menos carga por adeudos/reprobadas |
+| CONDICIONAL |       4–6       | Carga intermedia, con restricciones |
+| BAJA_TEMP   |         0         |  No inscribe materias en ese ciclo  |
+| BAJA_DEFI   |         0         |    No inscribe, baja definitiva    |
+| EGRESADO    |         0         |  Concluyó, no aplica inscripción  |
+| TITULADO    |         0         |  Titulado, no aplica inscripción  |
+
+**04_ETL_Limpieza (Fase de Valor):**
+
+5. * **Single-Pass Processing:** Uso de **CTEs** para localizar delimitadores una sola vez, optimizando el uso de CPU.
    * **Triple Extracción Atómica:** Transformación de metadata sucia en columnas tipadas físicamente (`FechaIngreso`, `Estatus`, `Promedio`).
    * **Data Grooming:** Aplicación de Title Case a nombres y estatus.
-5. **05_Executive_BI:** Dashboard visual en consola con barras de progreso y analítica de  **Eficiencia Presupuestaria** **.**
+6. **05_Executive_BI:** Dashboard visual en consola con barras de progreso y analítica de  **Eficiencia Presupuestaria** **.**
 
 ---
 

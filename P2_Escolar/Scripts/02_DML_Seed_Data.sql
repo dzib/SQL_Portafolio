@@ -1,9 +1,9 @@
 /* 
 ===========================================================================================================
 PROYECTO: P2_Escolar - Sistema de Gestión Académica
-FASE 2.1: Datos de Control - Seed Data (Data Cleansing Simulation)
+FASE 2.1: Datos de Control - Seed Data
 AUTOR: Alberto Dzib
-VERSIÓN: 2.1
+VERSIÓN: 2.2 (Enterprise Load Simulation)
 DESCRIPCIÓN: 
     - Inserción de catálogos base (Departamentos, Profesores, Cursos).
     - Carga de Alumnos con datos compuestos en 'MetaData_ETL' (Fecha | Estatus | Promedio).
@@ -15,138 +15,187 @@ DESCRIPCIÓN:
 USE P2_EscolarDB;
 GO
 
+SET NOCOUNT ON;
+-- Suprime el mensaje: "(1 filas afectadas)".
 DECLARE @StartTime DATETIME2 = SYSUTCDATETIME();
 
 BEGIN TRY
 --- -- ---------------------------------------------------------------------------------------------------------
 --- -- 1. POBLAR DEPARTAMENTOS.
 --- -- ---------------------------------------------------------------------------------------------------------
-    IF NOT EXISTS (SELECT 1 FROM Catalogos.Departamentos)
-    BEGIN
-        INSERT INTO Catalogos.Departamentos (Nombre, PresupuestoAnual)
+        IF NOT EXISTS (SELECT 1
+    FROM Catalogos.Departamentos)
+        BEGIN
+        INSERT INTO Catalogos.Departamentos
+            (Nombre, PresupuestoAnual)
         VALUES
-            ('Facultad de Ingeniería', 500000.00),
-            ('Ciencias Exactas', 300000.00),
-            ('Administración', 450000.00),
-            ('Humanidades', 250000.00);
+            ('Departamento de Ciencias Sociales', 500000.00),
+            ('Departamento de Ingenierías', 300000.00),
+            ('Departamento de Humanidades y Comunicación:', 450000.00),
+            ('Departamento de Ciencias Biomédicas', 250000.00);
         PRINT '✅ Catálogo: Departamentos insertado.';
     END
 
 --- -- ---------------------------------------------------------------------------------------------------------
 --- -- 2. POBLAR PROFESORES (Relacionados con Deptos).
 --- -- ---------------------------------------------------------------------------------------------------------
-    IF NOT EXISTS (SELECT 1 FROM Catalogos.Profesores)
-    BEGIN
-        INSERT INTO Catalogos.Profesores ( Nombre, Email, DeptoID)
-        VALUES 
-            ('Dr. Julián Pérez', 'julian.perez@escolar.edu', 1),
-            ('Mtra. Elena Gómez', 'elena.gomez@escolar.edu', 1),
-            ('Dr. Roberto Isaac', 'roberto.isaac@escolar.edu', 2),
-            ('Lic. Ana Martínez', 'ana.martinez@escolar.edu', 3);
+        IF NOT EXISTS (SELECT 1
+    FROM Catalogos.Profesores)
+        BEGIN
+        INSERT INTO Catalogos.Profesores
+            ( Nombre, Email, DeptoID, MetaData_ETL, IsActive, Sexo)
+        VALUES
+            ('Dr. Julián Pérez', 'julian.perez@escolar.edu', 1, 'GEN_001 | TIEMPO_COMPLETO', 1 , 'M'),
+            ('Mtra. Elena Gómez', 'elena.gomez@escolar.edu', 1, 'GEN_002 | MEDIO_TIEMPO', 1, 'F'),
+            ('Dr. Roberto Isaac', 'roberto.isaac@escolar.edu', 2, 'GEN_003 | INVITADO', 0, 'M'),
+            ('Lic. Ana Martínez', 'ana.martinez@escolar.edu', 3, 'GEN_004 | TIEMPO_COMPLETO', 1, 'F');
         PRINT '✅ Catálogo: Profesores insertado.';
     END
 
 --- -- ---------------------------------------------------------------------------------------------------------
 --- -- 3. POBLAR CURSOS.
 --- -- ---------------------------------------------------------------------------------------------------------
-    IF NOT EXISTS (SELECT 1 FROM Catalogos.Cursos)
-    BEGIN
-        INSERT INTO Catalogos.Cursos (Nombre, Creditos)
-        VALUES 
-            ('Base de Datos I', 8),
-            ('Programación SQL Server', 6),
-            ('Análisis de Algoritmos', 7),
+        IF NOT EXISTS (SELECT 1
+    FROM Catalogos.Cursos)
+        BEGIN
+        INSERT INTO Catalogos.Cursos
+            (Nombre, Creditos)
+        VALUES
+            ('Desarrollo Humano', 5),
+            ('Programación', 6),
+            ('Análisis de Algoritmos', 6),
             ('Ética Profesional', 4);
         PRINT '✅ Catálogo: Cursos insertado.';
     END
 
 --- -- ---------------------------------------------------------------------------------------------------------
---- -- 4. RELACIÓN CARRERA-ALUMNOS.
+--- -- 4. RELACIÓN CARRERA-DEPARTAMENTOS.
 --- -- ---------------------------------------------------------------------------------------------------------
-    IF NOT EXISTS (SELECT 1 FROM Catalogos.Carreras)
-    BEGIN
-        INSERT INTO Catalogos.Carreras (NombreCarrera, DeptoID)
+        IF NOT EXISTS (SELECT 1
+    FROM Catalogos.Carreras)
+        BEGIN
+        INSERT INTO Catalogos.Carreras
+            (NombreCarrera, DeptoID)
         VALUES
-            ('Ingeniería en Sistemas', 1), -- 1 = Facultad de Ingeniería
-            ('Cálculo Avanzado', 2),        -- 2 = Ciencias Exactas
-            ('Contaduría Pública', 3),     -- 3 = Administración
-            ('Derecho Penal', 4);          -- 4 = Humanidades
+            ('Psicología', 1),                          -- CarreraID = 1 = Departamento de Ciencias Sociales.
+            ('Antropología', 1),                        -- CarreraID = 2 = Departamento de Ciencias Sociales.    
+            ('Ciencia Política', 1),                    -- CarreraID = 3 = Departamento de Ciencias Sociales.    
+            -- 1 = Departamento de Ciencias Sociales.
+            ('Ingeniería en Sistemas', 2),              -- CarreraID = 4 = Departamento de Ingenierías.
+            ('Ingeniería Industrial', 2),               -- CarreraID = 5 = Departamento de Ingenierías.   
+            ('Ingeniería Electrónica', 2),              -- CarreraID = 6 = Departamento de Ingenierías.
+            -- 2 = Departamento de Ingenierías.
+            ('Comunicación Social', 3),                 -- CarreraID = 7 = Departamento de Humanidades y Comunicación.
+            ('Historia', 3),                            -- CarreraID = 8 = Departamento de Humanidades y Comunicación.
+            ('Historia', 3),                            -- CarreraID = 9 = Departamento de Humanidades y Comunicación.
+            -- 3 = Departamento de Humanidades y Comunicación.
+            ('Odontología', 4),                         -- CarreraID = 10 = Departamento de Ciencias Biomédicas.
+            ('Medicina', 4),                            -- CarreraID = 11 = Departamento de Ciencias Biomédicas.
+            ('Nutrición', 4);                           -- CarreraID = 12 = Departamento de Ciencias Biomédicas.
+        -- 4 = Departamento de Ciencias Biomédica.
         PRINT '✅ Catálogo: Carreras insertado.';
     END
 
 --- -- ---------------------------------------------------------------------------------------------------------
 --- -- 5. POBLAR ALUMNOS (Dato Maestro con Metadata ETL).
 --- -- ---------------------------------------------------------------------------------------------------------
-    IF NOT EXISTS (SELECT 1 FROM Catalogos.Alumnos)
-    BEGIN
-        INSERT INTO Catalogos.Alumnos (Nombre, CarreraID, Email, FechaNacimiento, MetaData_ETL)
+        IF NOT EXISTS (SELECT 1
+    FROM Catalogos.Alumnos)
+        BEGIN
+        INSERT INTO Catalogos.Alumnos
+            (Nombre, CarreraID, DeptoID, Email, FechaNacimiento, Sexo, MetaData_ETL)
         VALUES
-            ('Juan Carlos Luna | VIP', 1, 'juan.luna@test.com', '2002-05-15', '2023-01-10 | Activo | 8.5'),
-            ('Sofia Reyes | Beca', 2, 'sofia.reyes@test.com', '2001-11-20', '2022-08-15 | Regular | 9.2'),
-            ('Miguel Angel Sosa | Deporte', 3, 'migue.sosa@test.com', '2003-02-10', '2023-01-10 | Condicional | 7.4');
+            ('Juan Carlos Luna | VIP', 1, 1, 'juan.luna@test.com', '2002-05-15', 'M', '2025-01-10 | Regular | 8.5'),
+            ('Sofia Reyes | Beca', 4, 2, 'sofia.reyes@test.com', '2001-11-20', 'F', '2023-08-15 | Regular | 9.2'),
+            ('Andrea Diaz | Beca', 7, 3, 'andrea.diaz@test.com', '2000-01-20', 'F', '2024-06-10 | Irregular | 7.8'),
+            ('Miguel Angel Sosa | Deporte', 8, 4, 'migue.sosa@test.com', '2003-02-10', 'M', '2025-01-10 | Condicionado | 7.4');
         PRINT '✅ Catálogo: Alumnos (Legacy Style) insertado.';
     END
-
 
 --- -- ---------------------------------------------------------------------------------------------------------
 --- -- 6. RELACIÓN CURSOS-PROFESORES (Asignación Académica)..
 --- -- ---------------------------------------------------------------------------------------------------------
-    IF NOT EXISTS (SELECT 1 FROM Catalogos.CursosProfesores )  -- (Tabla Muchos a Muchos).
-    BEGIN
-        INSERT INTO Catalogos.CursosProfesores (CursoID, ProfesorID, CicloLectivo)
+        IF NOT EXISTS (SELECT 1
+    FROM Catalogos.CursosProfesores )  -- (Tabla Muchos a Muchos).
+        BEGIN
+        INSERT INTO Catalogos.CursosProfesores
+            (CursoID, ProfesorID, CicloLectivo)
         VALUES
-            (1, 1, '2025-1'), -- Julián en Bases de Datos I
-            (2, 2, '2025-1'), -- Elena en Programación SQL
-            (4, 4, '2025-1'); -- Ana en Ética
+            (1, 1, '2025-1'),
+            -- Julián en Psicología en en Desarrollo Humano.
+            (2, 2, '2025-1'),
+            -- Elena en Ingeniería en Programación.
+            (4, 4, '2025-1');
+        -- Departamento de Ciencias Biomédica en Etica Profesional.
         PRINT '✅ Relación: Cursos-Profesores establecida.';
     END
 
 --- -- ---------------------------------------------------------------------------------------------------------
---- -- 7. OPERACIONES (Materias , Inscripciones y Calificaciones).
+--- -- 7. OPERACIONES (Materias , Inscripciones, Asistencias y Calificaciones).
 --- -- ---------------------------------------------------------------------------------------------------------
-    IF NOT EXISTS (SELECT 1 FROM Operaciones.Materias) -- (Uniendo Alumnos con sus Materias/Cursos).
-    BEGIN
-        INSERT INTO Operaciones.Materias (Nombre, Creditos , ProfesorID)
-        VALUES
-            ('Inducción 1', 10, 1 ),
-            ('Inducción 2', 20, 2);
+        IF NOT EXISTS (SELECT 1
+    FROM Operaciones.Materias) -- (Uniendo Alumnos con sus Materias).
+        BEGIN
+    -- Asignar materias a profesores existentes (ejemplo simple)
+        INSERT INTO Operaciones.Materias
+            (Nombre, Creditos, ProfesorID)
+        SELECT 'Materia_' + CAST(ROW_NUMBER() OVER(ORDER BY (SELECT NULL)) AS VARCHAR(5)),
+            (ABS(CHECKSUM(NEWID())) % 4) + 3, -- créditos 3-6
+            P.ProfesorID
+        FROM Catalogos.Profesores P
+        WHERE P.ProfesorID IS NOT NULL;
         PRINT '✅ Operaciones: Materias iniciales registradas.';
     END
 
-    IF NOT EXISTS (SELECT 1 FROM Operaciones.Inscripciones) -- (Uniendo Alumnos con sus Materias/Cursos).
-    BEGIN
-        INSERT INTO Operaciones.Inscripciones (AlumnoID, MateriaID, CicloEscolar, NotaFinal)
+        IF NOT EXISTS (SELECT 1
+    FROM Operaciones.Inscripciones) 
+        BEGIN
+        INSERT INTO Operaciones.Inscripciones
+            (AlumnoID, MateriaID, CicloEscolar, NotaFinal, CursoID)
         VALUES
-            (1, 1, '2025-1', NULL), -- Juan Carlos inscrito en Materia 1
-            (2, 2, '2025-1', NULL);
+            (1, 1, '2025-1', NULL, 1),
+            -- Juan Carlos inscrito en Materia 1
+            (2, 1, '2025-2', NULL, 1);
         PRINT '✅ Operaciones: Inscripciones iniciales registradas.';
     END
 
-    IF NOT EXISTS (SELECT 1 FROM Operaciones.Calificaciones)  -- Calificaciones Parciales
-    BEGIN
-        INSERT INTO Operaciones.Calificaciones (AlumnoID, CursoID, Nota)
+        IF NOT EXISTS (SELECT 1
+    FROM Operaciones.Asistencias)
+        BEGIN
+        INSERT INTO Operaciones.Asistencias
+            (InscripcionID, AlumnoID, CursoID, FechaAsistencia, Presente)
         VALUES
-            (1, 1, 85.00),
-            (2, 2, 95.0);
+            (1, 1, 1, '2025-01-15', 1),
+            (2, 2, 2, '2025-01-15', 1);
+        PRINT '✅ Operaciones: Asistencias iniciales registradas.';
+    END
+
+        IF NOT EXISTS (SELECT 1
+    FROM Operaciones.Calificaciones)  -- Calificaciones registros por parcial (p. ej. Parcial 1, Parcial 2).
+        BEGIN
+        INSERT INTO Operaciones.Calificaciones
+            (InscripcionID, ParcialNumero, Nota, MetaData_ETL)
+        VALUES
+            (1, 1, 85.00, NULL),
+            (1, 2, 95.00, NULL);
         PRINT '✅ Operaciones: Calificaciones parciales registradas.';
     END
 
----- -- ---------------------------------------------------------------------------------------------------------
+
+---- -- --------------------------------------------------------------------------------------------------------
 --- -- 8. MÉTRICAS DE EJECUCIÓN.
 --- -- ---------------------------------------------------------------------------------------------------------
     PRINT '=========================================================';
-    PRINT '✅ Fase 2.1: Datos iniciales de P2 cargados con éxito.';
+    PRINT '✅ Fase 2.2: Datos iniciales de P2 cargados con éxito.';
     PRINT '⏱️ Tiempo de ejecución: ' + CAST(DATEDIFF(MILLISECOND, @StartTime, SYSUTCDATETIME()) AS VARCHAR) + ' ms.';
     PRINT '=========================================================';
 
 END TRY
 BEGIN CATCH
+    IF @@TRANCOUNT > 0 ROLLBACK; -- Seguridad transaccional
     PRINT '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!';
     PRINT '❌ Error en Script 02: ' + ERROR_MESSAGE();
     PRINT '📍 Línea: ' + CAST(ERROR_LINE() AS VARCHAR);
     PRINT '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!';
-
-    IF @@TRANCOUNT > 0 ROLLBACK; -- Seguridad transaccional
 END CATCH
-
 GO
