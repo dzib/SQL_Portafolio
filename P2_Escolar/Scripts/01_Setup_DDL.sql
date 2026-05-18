@@ -19,8 +19,6 @@ DESCRIPCIÓN:
 USE master;
 GO
 
-SET NOCOUNT ON;                     -- Para reducir tiempo se suprime el mensaje de "(1 filas afectadas)".
-
 SET NOCOUNT ON; -- Suprime el mensaje: "(1 filas afectadas)".
 
 IF EXISTS (SELECT * FROM sys.databases WHERE name = 'P2_EscolarDB')
@@ -50,8 +48,29 @@ BEGIN
     EXEC('CREATE SCHEMA Operaciones');
     PRINT '✅ Esquema [Operaciones] creado.';
 END;
-GO
 
+--- ------------------------------------------------------------------------------------------------------------
+--- -- Control: esquema y tabla de checkpoints (Bandera para el Stress_Test).
+--- ------------------------------------------------------------------------------------------------------------
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.schemas s
+    JOIN sys.tables t ON s.schema_id = t.schema_id
+    WHERE s.name = 'Control' AND t.name = 'Checkpoints'
+)
+BEGIN
+    EXEC('CREATE SCHEMA Control');
+    CREATE TABLE Control.Checkpoints (
+            CheckpointID INT IDENTITY(1,1) PRIMARY KEY,
+            Entidad NVARCHAR(100),
+            LastRun INT,
+            LastTimestamp DATETIME2,
+            RowsTotal BIGINT,
+            Estado NVARCHAR(50),
+            Mensaje NVARCHAR(4000)
+    );
+    PRINT '✅ Esquema [Control] creado.';
+END;
 -- ---------------------------------------------------------------------------------------------------------
 -- 3. TABLAS MAESTRAS (ESQUEMA CATALOGOS).
 -- ---------------------------------------------------------------------------------------------------------
@@ -70,8 +89,13 @@ BEGIN TRY
         Nombre NVARCHAR(150) NOT NULL,
         Email NVARCHAR(150) CONSTRAINT UQ_Prof_Email UNIQUE,
         DeptoID INT CONSTRAINT FK_Prof_Depto FOREIGN KEY REFERENCES Catalogos.Departamentos(DeptoID),
-        IsActive BIT DEFAULT 1
+        MetaData_ETL NVARCHAR(MAX),
+        IsActive BIT DEFAULT 1,
+        Sexo CHAR(1) CONSTRAINT CHK_Prof_Sexo CHECK (Sexo IN ('M','F'))
     );
+
+    CREATE INDEX IX_Profesores_Depto 
+    ON Catalogos.Profesores(DeptoID);
 
     CREATE TABLE Catalogos.Carreras (
         CarreraID INT IDENTITY(1,1) PRIMARY KEY,
@@ -86,10 +110,11 @@ BEGIN TRY
         DeptoID INT CONSTRAINT FK_Alumnos_Deptos FOREIGN KEY REFERENCES Catalogos.Departamentos(DeptoID),
         Email NVARCHAR(150) CONSTRAINT UQ_Alu_Email UNIQUE,
         FechaNacimiento DATE,
+        Sexo CHAR(1) CONSTRAINT CHK_Alu_Sexo CHECK (Sexo IN ('M','F')),
         -- Columna Legacy para la Fase 4: FechaIngreso | Estatus | Promedio".
         MetaData_ETL NVARCHAR(MAX),
         -- Columna Destino (single-Pass ETL Ready).
-        FechaIngreso Date,
+        FechaIngreso DATE,
         EstatusAcademico NVARCHAR(50),
         PromedioHistorico DECIMAL(4,2),
         CreateAt DATETIME2 DEFAULT SYSUTCDATETIME()
@@ -98,7 +123,7 @@ BEGIN TRY
     CREATE TABLE Catalogos.Cursos (
         CursoID INT PRIMARY KEY IDENTITY(1,1),
         Nombre NVARCHAR(150) NOT NULL,
-        Creditos INT CONSTRAINT CK_Creditos CHECK (Creditos BETWEEN 1 AND 12),
+        Creditos INT CONSTRAINT CHK_Cursos_Creditos CHECK (Creditos BETWEEN 1 AND 12)
     );
 
     -- Estructura para logica de Llave compuesta para tabla intermedia.
@@ -117,18 +142,30 @@ BEGIN TRY
     CREATE TABLE Operaciones.Materias (
         MateriaID INT PRIMARY KEY IDENTITY(1,1),
         Nombre NVARCHAR(150) NOT NULL,
-        Creditos INT CONSTRAINT CHK_Creditos CHECK (Creditos >= 0),
+        Creditos INT CONSTRAINT CHK_Materias_Creditos CHECK (Creditos >= 0),
         ProfesorID INT CONSTRAINT FK_Mat_Prof FOREIGN KEY REFERENCES Catalogos.Profesores(ProfesorID)
     );
+
+    CREATE INDEX IX_Materias_Profesor 
+    ON Operaciones.Materias(ProfesorID);
 
     CREATE TABLE Operaciones.Inscripciones (
         InscripcionID INT PRIMARY KEY IDENTITY(1,1),
         AlumnoID INT CONSTRAINT FK_Ins_Alu FOREIGN KEY REFERENCES Catalogos.Alumnos(AlumnoID),
         MateriaID INT CONSTRAINT FK_Ins_Mat FOREIGN KEY REFERENCES Operaciones.Materias(MateriaID),
-        CicloEscolar NVARCHAR(20),
-        NotaFinal DECIMAL(5,2) CONSTRAINT CHK_NotaRange CHECK (NotaFinal BETWEEN 0 AND 100),
-        CursoID INT CONSTRAINT FK_Ins_Curso FOREIGN KEY REFERENCES Catalogos.Cursos(CursoID)
+        CicloEscolar NVARCHAR(20) NOT NULL CONSTRAINT CHK_Ins_Ciclo CHECK (CicloEscolar LIKE '[0-9][0-9][0-9][0-9]-[12]'),
+        NotaFinal DECIMAL(5,2) NULL CONSTRAINT CHK_NotaRange CHECK (NotaFinal BETWEEN 0 AND 100),
+        CursoID INT CONSTRAINT FK_Ins_Curso FOREIGN KEY REFERENCES Catalogos.Cursos(CursoID),
+        CONSTRAINT UQ_Ins_Alumno_Mat_Curso_Ciclo UNIQUE (AlumnoID, MateriaID, CursoID, CicloEscolar)
     );
+
+    -- Aplicación de  Índices para rendimiento en joins y búsquedas.
+    CREATE INDEX IX_Inscripciones_Alumno
+    ON Operaciones.Inscripciones(AlumnoID);
+    CREATE INDEX IX_Inscripciones_Materia
+    ON Operaciones.Inscripciones(MateriaID);
+    CREATE INDEX IX_Inscripciones_Curso
+    ON Operaciones.Inscripciones(CursoID);
 
 -- Tabla: una asistencia por día
     CREATE TABLE Operaciones.Asistencias (
@@ -139,20 +176,27 @@ BEGIN TRY
         FechaAsistencia DATE NOT NULL DEFAULT CAST(GETDATE() AS DATE),
         Presente BIT DEFAULT 1
     );
+    
+    CREATE INDEX IX_Asistencias_Alumno 
+    ON Operaciones.Asistencias(AlumnoID);
+    CREATE INDEX IX_Asistencias_Curso 
+    ON Operaciones.Asistencias(CursoID);
 -- Índice único para evitar más de una asistencia por día.
     CREATE UNIQUE INDEX UX_Asistencias_Inscripcion_Dia
-    ON Operaciones.Asistencias (InscripcionID, FechaAsistencia);
+    ON Operaciones.Asistencias(InscripcionID, FechaAsistencia);
 
     -- Calificaciones registros por parcial (p. ej. Parcial 1, Parcial 2).
     CREATE TABLE Operaciones.Calificaciones ( 
-        CalificacionID INT PRIMARY KEY IDENTITY(1,1),
-        InscripcionID INT CONSTRAINT FK_Ins_Cal FOREIGN KEY REFERENCES Operaciones.Inscripciones(InscripcionID) ON DELETE CASCADE,
-        ParcialNumero INT CONSTRAINT CHK_Parcial CHECK (ParcialNumero BETWEEN 1 AND 3),
-        AlumnoID INT CONSTRAINT FK_Cal_Alumnos FOREIGN KEY REFERENCES Catalogos.Alumnos(AlumnoID),
-        CursoID INT CONSTRAINT FK_Cal_Cursos FOREIGN KEY REFERENCES Catalogos.Cursos(CursoID),
-        Nota DECIMAL(5,2) CONSTRAINT CK_Nota CHECK (Nota BETWEEN 0 AND 100),
-        FechaAplicacion DATETIME2 DEFAULT SYSUTCDATETIME()
+        CalificacionID INT IDENTITY(1,1) PRIMARY KEY,
+        InscripcionID INT NOT NULL CONSTRAINT FK_Cal_Ins FOREIGN KEY REFERENCES Operaciones.Inscripciones(InscripcionID) ON DELETE CASCADE,
+        ParcialNumero TINYINT NOT NULL CONSTRAINT CHK_Cal_Parcial CHECK (ParcialNumero BETWEEN 1 AND 3),
+        Nota DECIMAL(5,2) NOT NULL CONSTRAINT CK_Cal_Nota CHECK (Nota BETWEEN 0 AND 100),
+        MetaData_ETL NVARCHAR(MAX),
+        FechaAplicacion DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+        CONSTRAINT UQ_Cal_Ins_Parcial UNIQUE (InscripcionID, ParcialNumero)
     );
+    CREATE INDEX IX_Calificaciones_Inscripcion 
+    ON Operaciones.Calificaciones(InscripcionID);
 
 --- -- ---------------------------------------------------------------------------------------------------------
 --- -- 5. LOG DE EJECUCIÓN Y CIERRE DE BLOQUE
@@ -170,5 +214,6 @@ BEGIN CATCH
     PRINT '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!';
 
     IF @@TRANCOUNT > 0 ROLLBACK; -- Seguridad transaccional
+    THROW;
 END CATCH;
 GO

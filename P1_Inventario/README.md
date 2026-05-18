@@ -79,7 +79,7 @@ P1_Inventario/
 │   ├── 03_Procesamiento_Batch.sql   # Stress test y simulación de volumen.
 │   ├── 04_ETL_Limpieza.sql          # Pipeline de normalización y Data Quality
 │   └── 05_BI_Analytics.sql          # Capa de vistas para consumo externo.
-└── Documentacion.md		          # Guía técnica del proyecto.
+└── README.md		             # Guía técnica del proyecto.
 ```
 
 ---

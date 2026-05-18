@@ -20,24 +20,6 @@ SET NOCOUNT ON;
 DECLARE @StartTime DATETIME2 = SYSUTCDATETIME();
 
 BEGIN TRY
-----------------------------------------------------------------------------------------------------------------
---- -- Control: esquema y tabla de checkpoints (Bandera para el Stress_Test).
-----------------------------------------------------------------------------------------------------------------
-    IF NOT EXISTS (
-        SELECT 1
-        FROM sys.schemas s
-        JOIN sys.tables t ON s.schema_id = t.schema_id
-        WHERE s.name = 'Control' AND t.name = 'Checkpoints'
-    )
-    BEGIN
-        EXEC('CREATE SCHEMA Control');
-        CREATE TABLE Control.Checkpoints (
-            Entidad NVARCHAR(50) PRIMARY KEY,
-            UltimoID INT NOT NULL DEFAULT(0),
-            FechaActualizacion DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
-        );
-    END;
-
 --- -- ---------------------------------------------------------------------------------------------------------
 --- -- 1. POBLAR DEPARTAMENTOS.
 --- -- ---------------------------------------------------------------------------------------------------------
@@ -61,12 +43,12 @@ BEGIN TRY
     FROM Catalogos.Profesores)
         BEGIN
         INSERT INTO Catalogos.Profesores
-            ( Nombre, Email, DeptoID)
+            ( Nombre, Email, DeptoID, MetaData_ETL, IsActive, Sexo)
         VALUES
-            ('Dr. Julián Pérez', 'julian.perez@escolar.edu', 1),
-            ('Mtra. Elena Gómez', 'elena.gomez@escolar.edu', 1),
-            ('Dr. Roberto Isaac', 'roberto.isaac@escolar.edu', 2),
-            ('Lic. Ana Martínez', 'ana.martinez@escolar.edu', 3);
+            ('Dr. Julián Pérez', 'julian.perez@escolar.edu', 1, 'GEN_001 | TIEMPO_COMPLETO', 1 , 'M'),
+            ('Mtra. Elena Gómez', 'elena.gomez@escolar.edu', 1, 'GEN_002 | MEDIO_TIEMPO', 1, 'F'),
+            ('Dr. Roberto Isaac', 'roberto.isaac@escolar.edu', 2, 'GEN_003 | INVITADO', 0, 'M'),
+            ('Lic. Ana Martínez', 'ana.martinez@escolar.edu', 3, 'GEN_004 | TIEMPO_COMPLETO', 1, 'F');
         PRINT '✅ Catálogo: Profesores insertado.';
     END
 
@@ -121,12 +103,12 @@ BEGIN TRY
     FROM Catalogos.Alumnos)
         BEGIN
         INSERT INTO Catalogos.Alumnos
-            (Nombre, CarreraID, DeptoID, Email, FechaNacimiento, MetaData_ETL)
+            (Nombre, CarreraID, DeptoID, Email, FechaNacimiento, Sexo, MetaData_ETL)
         VALUES
-            ('Juan Carlos Luna | VIP', 1, 1, 'juan.luna@test.com', '2002-05-15', '2025-01-10 | Regular | 8.5'),
-            ('Sofia Reyes | Beca', 4, 2, 'sofia.reyes@test.com', '2001-11-20', '2023-08-15 | Regular | 9.2'),
-            ('Andrea Diaz | Beca', 7, 3, 'andrea.diaz@test.com', '2000-01-20', '2024-06-10 | Irregular | 7.8'),
-            ('Miguel Angel Sosa | Deporte', 8, 4, 'migue.sosa@test.com', '2003-02-10', '2025-01-10 | Condicionado | 7.4');
+            ('Juan Carlos Luna | VIP', 1, 1, 'juan.luna@test.com', '2002-05-15', 'M', '2025-01-10 | Regular | 8.5'),
+            ('Sofia Reyes | Beca', 4, 2, 'sofia.reyes@test.com', '2001-11-20', 'F', '2023-08-15 | Regular | 9.2'),
+            ('Andrea Diaz | Beca', 7, 3, 'andrea.diaz@test.com', '2000-01-20', 'F', '2024-06-10 | Irregular | 7.8'),
+            ('Miguel Angel Sosa | Deporte', 8, 4, 'migue.sosa@test.com', '2003-02-10', 'M', '2025-01-10 | Condicionado | 7.4');
         PRINT '✅ Catálogo: Alumnos (Legacy Style) insertado.';
     END
 
@@ -173,7 +155,7 @@ BEGIN TRY
         VALUES
             (1, 1, '2025-1', NULL, 1),
             -- Juan Carlos inscrito en Materia 1
-            (2, 2, '2025-1', NULL, 1);
+            (2, 1, '2025-2', NULL, 1);
         PRINT '✅ Operaciones: Inscripciones iniciales registradas.';
     END
 
@@ -192,46 +174,16 @@ BEGIN TRY
     FROM Operaciones.Calificaciones)  -- Calificaciones registros por parcial (p. ej. Parcial 1, Parcial 2).
         BEGIN
         INSERT INTO Operaciones.Calificaciones
-            (InscripcionID, ParcialNumero,AlumnoID, CursoID, Nota)
+            (InscripcionID, ParcialNumero, Nota, MetaData_ETL)
         VALUES
-            (1, 1, 1, 1, 85.00),
-            (2, 1, 2, 2, 95.00);
+            (1, 1, 85.00, NULL),
+            (1, 2, 95.00, NULL);
         PRINT '✅ Operaciones: Calificaciones parciales registradas.';
     END
 
----- -- --------------------------------------------------------------------------------------------------------
---- -- 8. ACTUALIZACION DE CONTROL (Checkpoints con los máximos actuales).
---- -- ---------------------------------------------------------------------------------------------------------
-    -- Alumnos
-    MERGE Control.Checkpoints AS C
-    USING (SELECT 'Alumnos' AS Entidad, ISNULL(MAX(AlumnoID),0) AS UltimoID FROM Catalogos.Alumnos) AS S
-    ON C.Entidad = S.Entidad
-    WHEN MATCHED THEN UPDATE SET UltimoID = S.UltimoID, FechaActualizacion = SYSUTCDATETIME()
-    WHEN NOT MATCHED THEN INSERT (Entidad, UltimoID, FechaActualizacion) VALUES (S.Entidad, S.UltimoID, SYSUTCDATETIME());
-
-    -- Profesores
-    MERGE Control.Checkpoints AS C
-    USING (SELECT 'Profesores' AS Entidad, ISNULL(MAX(ProfesorID),0) AS UltimoID FROM Catalogos.Profesores) AS S
-    ON C.Entidad = S.Entidad
-    WHEN MATCHED THEN UPDATE SET UltimoID = S.UltimoID, FechaActualizacion = SYSUTCDATETIME()
-    WHEN NOT MATCHED THEN INSERT (Entidad, UltimoID, FechaActualizacion) VALUES (S.Entidad, S.UltimoID, SYSUTCDATETIME());
-
-    -- Cursos
-    MERGE Control.Checkpoints AS C
-    USING (SELECT 'Cursos' AS Entidad, ISNULL(MAX(CursoID),0) AS UltimoID FROM Catalogos.Cursos) AS S
-    ON C.Entidad = S.Entidad
-    WHEN MATCHED THEN UPDATE SET UltimoID = S.UltimoID, FechaActualizacion = SYSUTCDATETIME()
-    WHEN NOT MATCHED THEN INSERT (Entidad, UltimoID, FechaActualizacion) VALUES (S.Entidad, S.UltimoID, SYSUTCDATETIME());
-
-    -- Materias
-    MERGE Control.Checkpoints AS C
-    USING (SELECT 'Materias' AS Entidad, ISNULL(MAX(MateriaID),0) AS UltimoID FROM Operaciones.Materias) AS S
-    ON C.Entidad = S.Entidad
-    WHEN MATCHED THEN UPDATE SET UltimoID = S.UltimoID, FechaActualizacion = SYSUTCDATETIME()
-    WHEN NOT MATCHED THEN INSERT (Entidad, UltimoID, FechaActualizacion) VALUES (S.Entidad, S.UltimoID, SYSUTCDATETIME());
 
 ---- -- --------------------------------------------------------------------------------------------------------
---- -- 9. MÉTRICAS DE EJECUCIÓN.
+--- -- 8. MÉTRICAS DE EJECUCIÓN.
 --- -- ---------------------------------------------------------------------------------------------------------
     PRINT '=========================================================';
     PRINT '✅ Fase 2.2: Datos iniciales de P2 cargados con éxito.';
@@ -240,11 +192,10 @@ BEGIN TRY
 
 END TRY
 BEGIN CATCH
+    IF @@TRANCOUNT > 0 ROLLBACK; -- Seguridad transaccional
     PRINT '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!';
     PRINT '❌ Error en Script 02: ' + ERROR_MESSAGE();
     PRINT '📍 Línea: ' + CAST(ERROR_LINE() AS VARCHAR);
     PRINT '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!';
-
-    IF @@TRANCOUNT > 0 ROLLBACK; -- Seguridad transaccional
 END CATCH
 GO

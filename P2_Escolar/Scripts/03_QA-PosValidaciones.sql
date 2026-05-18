@@ -65,3 +65,4 @@ SELECT InscripcionID, CAST(FechaAsistencia AS DATE) AS Dia, COUNT(*) AS Cnt
 FROM Operaciones.Asistencias
 GROUP BY InscripcionID, CAST(FechaAsistencia AS DATE)
 HAVING COUNT(*) > 1;
+

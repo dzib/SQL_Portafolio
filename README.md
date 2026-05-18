@@ -82,7 +82,7 @@ graph LR
 
 |      **Categoría**      |    **Métrica**    |         **Benchmark**         | **Proyecto Clave** | **Estado** |
 | :-----------------------------: | :-----------------------: | :---------------------------------: | :----------------------: | :--------------: |
-|  **Optimización T-SQL**  |    Velocidad de Carga    |    **120 ms (5k+ registros)**    |   **P2_Escolar**   |        🚀        |
+|  **Optimización T-SQL**  |    Velocidad de Carga    |  **120 ms (5k+ registros)**  |   **P2_Escolar**   |        🚀        |
 |    **Normalización**    |     Limpieza Atómica     |      **Single-Pass ETL**      | **P1_Inventario** |        📦        |
 |    **Ingesta Masiva**    |    Velocidad de Carga    | **23.8k reg/seg** (180k tot.) | **P4_SupplyChain** |        ⚡        |
 | **Transformación (ETL)** | Limpieza y Normalización |     **644 ms** (Fase 4.4)     | **P4_SupplyChain** |        ✅        |
@@ -110,7 +110,7 @@ SQL_Portafolio/
 ├── 📂 P1_Inventario/              # Gestión de Stock y Fundamentos Relacionales
 │   ├── Scripts/                   # Pipeline SQL (01-05)
 │   ├── img/                       # Evidencias gráficas
-│   └── Documentacion.md
+│   └── README.md
 ├── 📂 P2_Escolar/                 # Arquitectura Avanzada y ETL con CTEs
 │   ├── Scripts/                   # Pipeline SQL (01-05)
 │   ├── img/                       # Evidencias de métricas
@@ -119,7 +119,7 @@ SQL_Portafolio/
 │   ├── Scripts/                   # Scripts .py y .sql
 │   ├── Datos/                     # Datasets generados (50k registros)
 │   ├── img/                       # Dashboards de Analítica
-│   └── Documentacion.md
+│   └── README.md
 ├── 📂 P4_Real_World_Ingestion/    # Supply Chain & Observabilidad
 │   ├── 01_Setup_DDL/              # Esquemas y constraints
 │   ├── 02_Ingesta_Pro/            # Orquestación Python (23.8k reg/seg)
@@ -127,7 +127,7 @@ SQL_Portafolio/
 │   ├── 04_ETL_Cleaning/           # Normalización y detección de anomalías
 │   ├── 05_BI_Observabilidad/      # Vistas SQL y Dashboard PyGWalker
 │   ├── img/                       # Evidencias de performance y BI
-│   └── Documentacion.md
+│   └── README.md
 ├── 📄 README.md                   # Documentación maestra del portafolio
 ├── 📄 .prettierrc                  # Reglas de estilo de código (JSON)
 ├── 📄 .prettierignore              # Archivos ignorados por Prettier
@@ -243,7 +243,7 @@ Ecosistema escolar resiliente con triple extracción y analítica presupuestaria
 
 * **Resiliencia Atómica:** Capacidad de reconstrucción total del entorno tras fallos críticos, optimizando el performance en un  **80%** **.**
 * **ETL Senior:** Pipeline híbrido que procesa 1,000 registros en  **31ms** **, normalizando metadata sucia mediante CTEs y Single-Pass Processing.**
-* **Business Intelligence:** Dashboard ejecutivo con métricas de **Eficiencia de Inversión** (Rendimiento Académico vs. Presupuesto por Facultad).
+* **Business Intelligence:** Dashboard operativo omnicanal en Excel (Modo Oscuro) conectado vía  **ODBC** , con semaforización logística automatizada para el control de stock crítico y análisis de tendencias de ventas.
 * **Stress Testing:** Simulación de carga masiva de 5,000 registros con blindaje proactivo contra nulos.
 
 ---
